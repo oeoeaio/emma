@@ -39,6 +39,7 @@ import tools.MissingSummaryPanel;
 
 import management.SiteManagementPanel;
 import management.SourceManagementPanel;
+import missingPlotter.MissingPlotPanel;
 
 public class EndUseWindow extends JFrame implements ActionListener{
 	private static final long serialVersionUID = -8895907428954506528L;
@@ -123,6 +124,7 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			SiteManagementPanel managementPanel = new SiteManagementPanel(dbConn);
 			SourceManagementPanel sourceManagementPanel = new SourceManagementPanel(dbConn);
 			DataPlotPanel dataPlotPanel = new DataPlotPanel(dbConn);
+			MissingPlotPanel missingPlotPanel = new MissingPlotPanel(dbConn);
 			IssuePanel errorPanel = new IssuePanel(dbConn);
 			
 			//TODO Panels To Add
@@ -178,8 +180,9 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			
 			mainPane.add(managementPanel,"Site Management");
 			mainPane.add(sourceManagementPanel,"Source Management");
-			mainPane.add(errorPanel,"Issue Monitoring");
 			mainPane.add(dataPlotPanel,"Data Visualisation");
+			mainPane.add(missingPlotPanel,"Missing Visualisation");
+			mainPane.add(errorPanel,"Issue Monitoring");
 
 			getContentPane().add(mainPane, BorderLayout.CENTER);
 			setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
