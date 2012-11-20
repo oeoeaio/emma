@@ -68,9 +68,9 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 	//Date Panel
 	JPanel datePanel = new JPanel(new FlowLayout());
 	JLabel startDateL = new JLabel("Start Date");
-	JComboBox startDateS = new JComboBox();
+	JComboBox<String> startDateS = new JComboBox<String>();
 	JLabel endDateL = new JLabel("End Date");
-	JComboBox endDateS = new JComboBox();
+	JComboBox<String> endDateS = new JComboBox<String>();
 	JLabel inclusiveL = new JLabel("(inclusive)");
 	
 	//Output File Selection Panel
@@ -86,7 +86,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 	JLabel threshLabel2 = new JLabel("Theshold 2");
 	JTextField threshInput2 = new JTextField(3);
 	JLabel basePowerL = new JLabel("Base Power Offset");
-	JComboBox basePowerS = new JComboBox(new Integer[] {1,2,3,4,5,6,7,8,9,10});
+	JComboBox<Integer> basePowerS = new JComboBox<Integer>(new Integer[] {1,2,3,4,5,6,7,8,9,10});
 	//Power Correction
 	JPanel pwrCorrPanel = new JPanel();
 	JLabel pwrCorrL = new JLabel("Power Correction: ");

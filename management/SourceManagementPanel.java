@@ -67,7 +67,7 @@ public class SourceManagementPanel extends JPanel implements ListSelectionListen
 	JPanel componentPanel = new JPanel(new BorderLayout());
 	JPanel componentTitleP = new JPanel(new FlowLayout());
 	JLabel componentLabel = new JLabel("Manage: ");
-	JComboBox componentSelect = new JComboBox(Source.getManagementList()); //
+	JComboBox<String> componentSelect = new JComboBox<String>(Source.getManagementList()); //
 	JPanel selectedComponentPanel = new JPanel(new BorderLayout());
 	
 	//Appliance Panel

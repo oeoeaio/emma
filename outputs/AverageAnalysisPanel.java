@@ -52,7 +52,7 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 	private final JPanel sitePanel = new JPanel(new BorderLayout());
 	private final JPanel siteTitleP = new JPanel(new FlowLayout());
 	private final JLabel siteLabel = new JLabel("Select Site");
-	private final JComboBox siteSelectionType = new JComboBox(new String[] {"Single","All"});
+	private final JComboBox<String> siteSelectionType = new JComboBox<String>(new String[] {"Single","All"});
 	private final SiteTable siteTable = new SiteTable(new String[] {"Site ID","Site Name","Given Name","Surname"});
 	private final JScrollPane siteScroll = new JScrollPane(siteTable);
 
@@ -73,7 +73,7 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 	//Analysis Type
 	private final JPanel analysisTypePanel = new JPanel(new FlowLayout());
 	private final JLabel analysisTypeL = new JLabel("Analysis Type");
-	//private final JComboBox analysisTypeS = new JComboBox(new String[] {"Average","Average+Count","Average+Count+StdDev","Light On-Time","Circuit Known"});
+	//private final JComboBox<String> analysisTypeS = new JComboBox<String>(new String[] {"Average","Average+Count","Average+Count+StdDev","Light On-Time","Circuit Known"});
 	private final JRadioButton avgAnalysis = new JRadioButton("Average");
 	private final JRadioButton sumAnalysis = new JRadioButton("Light On-Time");
 	private final JRadioButton circuitKnownAnalysis = new JRadioButton("Circuit Known");
@@ -87,14 +87,14 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 	//SamplePeriodPanel
 	private final JPanel samplePeriodPanel = new JPanel(new FlowLayout());
 	private final JLabel samplePeriodL = new JLabel("Sample Period");
-	private final JComboBox samplePeriodS = new JComboBox();
+	private final JComboBox<String> samplePeriodS = new JComboBox<String>();
 	
 	//Date Panel
 	private final JPanel datePanel = new JPanel(new FlowLayout());
 	private final JLabel startDateL = new JLabel("Start Date");
-	private final JComboBox startDateS = new JComboBox();
+	private final JComboBox<String> startDateS = new JComboBox<String>();
 	private final JLabel endDateL = new JLabel("End Date");
-	private final JComboBox endDateS = new JComboBox();
+	private final JComboBox<String> endDateS = new JComboBox<String>();
 	private final JLabel inclusiveL = new JLabel("(inclusive)");
 	
 	//Start Panel

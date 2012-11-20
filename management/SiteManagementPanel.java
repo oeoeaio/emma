@@ -72,8 +72,8 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 	JTextField sourceInput1 = new JTextField(20);
 	JTextField sourceInput2 = new JTextField(20);
 	JTextField sourceInput3 = new JTextField(20);
-	JComboBox sourceInput4 = new JComboBox(Source.getSourceTypeList());
-	JComboBox sourceInput5 = new JComboBox(Source.getMeasurementList());
+	JComboBox<String> sourceInput4 = new JComboBox<String>(Source.getSourceTypeList());
+	JComboBox<String> sourceInput5 = new JComboBox<String>(Source.getMeasurementList());
 	JTextField sourceInput6 = new JTextField(20);
 	
 	//site Edit Panel
@@ -89,7 +89,7 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 	JTextField siteInput3 = new JTextField(20);
 	JTextField siteInput4 = new JTextField(20);
 	JTextField siteInput5 = new JTextField(20);
-	JComboBox siteInput6 = new JComboBox(new Object[] {"","NSW","VIC","QLD","ACT","WA","SA","TAS","NT"});
+	JComboBox<String> siteInput6 = new JComboBox<String>(new String[] {"","NSW","VIC","QLD","ACT","WA","SA","TAS","NT"});
 	
 	Connection dbConn;
 	

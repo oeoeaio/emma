@@ -41,7 +41,7 @@ public class DISCRETETODExtractor extends JFrame implements Runnable,ItemListene
 	//Installation Panel
 	JPanel instPanel = new JPanel(new FlowLayout());
 	JLabel installation_id_selectL = new JLabel("Installation ID");
-	JComboBox installation_id_select = new JComboBox();
+	JComboBox<Integer> installation_id_select = new JComboBox<Integer>();
 	
 	//Radio Button Panel
 	JPanel radPanel = new JPanel(new FlowLayout());
@@ -65,16 +65,16 @@ public class DISCRETETODExtractor extends JFrame implements Runnable,ItemListene
 	//Date Panel
 	JPanel datePanel = new JPanel(new FlowLayout());
 	JLabel startDateL = new JLabel("Start Date");
-	JComboBox startDateS = new JComboBox();
+	JComboBox<String> startDateS = new JComboBox<String>();
 	JLabel endDateL = new JLabel("End Date");
-	JComboBox endDateS = new JComboBox();
+	JComboBox<String> endDateS = new JComboBox<String>();
 	JLabel inclusiveL = new JLabel("(inclusive)");
 	
 	//Threshold Selector
 	JPanel topPanel = new JPanel(new BorderLayout());
 	JPanel countPanel = new JPanel(new FlowLayout());
 	JLabel modeCountL = new JLabel("No. of Modes");
-	JComboBox modeCountS = new JComboBox(new Integer[] {1,2,3,4,5});
+	JComboBox<Integer> modeCountS = new JComboBox<Integer>(new Integer[] {1,2,3,4,5});
 	JPanel thPanel = new JPanel(new FlowLayout());
 	JLabel m1L = new JLabel("|Mode 1|");
 	JLabel th1L = new JLabel(" <= ");

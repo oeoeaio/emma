@@ -93,8 +93,8 @@ public class StandAloneImportPanel extends JPanel implements ActionListener,List
 	
 	//File Input Panel Components
 	JPanel inputFilePanel = new JPanel(new BorderLayout());
-	DefaultListModel inputFileListModel = new DefaultListModel();
-	JList fileSelectField = new JList(); 
+	DefaultListModel<String> inputFileListModel = new DefaultListModel<String>();
+	JList<String> fileSelectField = new JList<String>(); 
 	JScrollPane inputFileScroll = new JScrollPane(fileSelectField);
 	//File Select Button Panel Components
 	//JPanel inputFileButtonPanel = new JPanel();

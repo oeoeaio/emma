@@ -51,7 +51,7 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 	private final JPanel sitePanel = new JPanel(new BorderLayout());
 	private final JPanel siteTitleP = new JPanel(new FlowLayout());
 	private final JLabel siteLabel = new JLabel("Select Site");
-	private final JComboBox siteSelectionType = new JComboBox(new String[] {"Single","All"});
+	private final JComboBox<String> siteSelectionType = new JComboBox<String>(new String[] {"Single","All"});
 	private final SiteTable siteTable = new SiteTable(new String[] {"Site ID","Site Name","Given Name","Surname"});
 	private final JScrollPane siteScroll = new JScrollPane(siteTable);
 
@@ -92,14 +92,14 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 	//SamplePeriodPanel
 	private final JPanel samplePeriodPanel = new JPanel(new FlowLayout());
 	private final JLabel samplePeriodL = new JLabel("Sample Period");
-	private final JComboBox samplePeriodS = new JComboBox(new String[] {"60"});
+	private final JComboBox<String> samplePeriodS = new JComboBox<String>(new String[] {"60"});
 	
 	//Date Panel
 	private final JPanel datePanel = new JPanel(new FlowLayout());
 	private final JLabel startDateL = new JLabel("Start Date");
-	private final JComboBox startDateS = new JComboBox();
+	private final JComboBox<String> startDateS = new JComboBox<String>();
 	private final JLabel endDateL = new JLabel("End Date");
-	private final JComboBox endDateS = new JComboBox();
+	private final JComboBox<String> endDateS = new JComboBox<String>();
 	private final JLabel inclusiveL = new JLabel("(inclusive)");
 	
 	//Start Panel

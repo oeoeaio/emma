@@ -86,7 +86,7 @@ public class SourcesPanel extends JPanel implements ActionListener,TableModelLis
 		
 		updateSources();
 		
-		sourcesTable.getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(new JComboBox(new String[] {"FZ","RF","TP","VM"})));
+		sourcesTable.getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(new JComboBox<String>(new String[] {"FZ","RF","TP","VM"})));
 		
 		this.add(topPanel,BorderLayout.NORTH);
 		this.add(tablePanel,BorderLayout.CENTER);

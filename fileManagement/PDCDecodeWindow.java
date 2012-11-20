@@ -26,23 +26,23 @@ public class PDCDecodeWindow extends JFrame implements ActionListener{
 	private static final long serialVersionUID = 6307555201299049958L;
 	
 	//Main Panel
-	JPanel mainPanel = new JPanel(new BorderLayout());
+	private final JPanel mainPanel = new JPanel(new BorderLayout());
 	//File Panel Components
-	JPanel filePanel = new JPanel(new BorderLayout());
-	DefaultListModel fileListModel = new DefaultListModel();
-	JList fileSelectField = new JList(); 
-	JScrollPane fileScroll = new JScrollPane(fileSelectField);
+	private final JPanel filePanel = new JPanel(new BorderLayout());
+	private final DefaultListModel<String> fileListModel = new DefaultListModel<String>();
+	private final JList<String> fileSelectField = new JList<String>(); 
+	private final JScrollPane fileScroll = new JScrollPane(fileSelectField);
 	//File Select Button Panel Components
-	JPanel fileButtonPanel = new JPanel();
-	JButton fileSelectButton = new JButton("Select/Add files...");
+	private final JPanel fileButtonPanel = new JPanel();
+	private final JButton fileSelectButton = new JButton("Select/Add files...");
 	//Button Panel Components
-	JPanel nextButtonPanel = new JPanel();
-	JButton removeButton = new JButton("Remove Selected Files");
-	JButton nextButton = new JButton("Next...");
+	private final JPanel nextButtonPanel = new JPanel();
+	private final JButton removeButton = new JButton("Remove Selected Files");
+	private final JButton nextButton = new JButton("Next...");
 	
 	//File Selection Window
-	JFileChooser fChooser = new JFileChooser("./");
-	ArrayList<File> fileList = new ArrayList<File>();
+	private final JFileChooser fChooser = new JFileChooser("./");
+	private final ArrayList<File> fileList = new ArrayList<File>();
 	
 	public static void main(String[] args) {
 		// Get the native look and feel class name

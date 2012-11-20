@@ -48,7 +48,7 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 	JLabel o1SurnameL = new JLabel("Surname:");
 	JLabel o1SuburbL = new JLabel("Town/Suburb");
 	JLabel o1StateL = new JLabel("State");
-	JComboBox o1SiteName = new JComboBox();
+	JComboBox<String> o1SiteName = new JComboBox<String>();
 	JTextField o1GivenName = new JTextField(10);
 	JTextField o1Surname = new JTextField(10);
 	JTextField o1Suburb = new JTextField(10);

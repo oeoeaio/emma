@@ -49,7 +49,7 @@ public class RawDataExportPanel extends JPanel implements ItemListener,ActionLis
 	private final JPanel sitePanel = new JPanel(new BorderLayout());
 	private final JPanel siteTitleP = new JPanel(new FlowLayout());
 	private final JLabel siteLabel = new JLabel("Select Site");
-	private final JComboBox siteSelectionType = new JComboBox(new String[] {"Single","All"});
+	private final JComboBox<String> siteSelectionType = new JComboBox<String>(new String[] {"Single","All"});
 	private final SiteTable siteTable = new SiteTable(new String[] {"Site ID","Site Name","Given Name","Surname"});
 	private final JScrollPane siteScroll = new JScrollPane(siteTable);
 
@@ -70,9 +70,9 @@ public class RawDataExportPanel extends JPanel implements ItemListener,ActionLis
 	//Date Panel
 	private final JPanel datePanel = new JPanel(new FlowLayout());
 	private final JLabel startDateL = new JLabel("Start Date");
-	private final JComboBox startDateS = new JComboBox();
+	private final JComboBox<String> startDateS = new JComboBox<String>();
 	private final JLabel endDateL = new JLabel("End Date");
-	private final JComboBox endDateS = new JComboBox();
+	private final JComboBox<String> endDateS = new JComboBox<String>();
 	private final JLabel inclusiveL = new JLabel("(inclusive)");
 	
 	//Start Panel

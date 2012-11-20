@@ -31,8 +31,8 @@ public class GPOEditPanel extends JPanel {
 	JTextField siteIDInput = new JTextField(20); //site id
 	JTextField gpoIDInput = new JTextField(20); //gpo id
 	JTextField gpoNameInput = new JTextField(20); //gpo name
-	JComboBox circuitIDInput = new JComboBox(); //circuit id
-	JComboBox roomIDInput = new JComboBox(); //room id
+	JComboBox<String> circuitIDInput = new JComboBox<String>(); //circuit id
+	JComboBox<String> roomIDInput = new JComboBox<String>(); //room id
 	JTextField notesInput = new JTextField(20); //notes
 	
 	Connection dbConn;

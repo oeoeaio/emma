@@ -35,10 +35,10 @@ public class LightEditPanel extends JPanel implements ActionListener{
 	JTextField siteIDInput = new JTextField(20); //site id
 	JTextField sourceIDInput = new JTextField(20); //source id
 	JTextField sourceNameInput = new JTextField(20); //source name
-	JComboBox circuitInput = new JComboBox(); //circuit id
-	JComboBox roomInput = new JComboBox(); //room id
-	JComboBox sourceTypeInput = new JComboBox(Source.getSourceTypeList()); //source type
-	JComboBox measurementTypeInput = new JComboBox(Source.getMeasurementList()); //measurement type
+	JComboBox<String> circuitInput = new JComboBox<String>(); //circuit id
+	JComboBox<String> roomInput = new JComboBox<String>(); //room id
+	JComboBox<String> sourceTypeInput = new JComboBox<String>(Source.getSourceTypeList()); //source type
+	JComboBox<String> measurementTypeInput = new JComboBox<String>(Source.getMeasurementList()); //measurement type
 	JTextField wattageInput = new JTextField(20); //wattage
 	JTextField notesInput = new JTextField(20); //notes
 	

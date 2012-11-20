@@ -28,8 +28,8 @@ public class PDCImportPanel extends JPanel implements ActionListener{
 	
 	//File Panel Components
 	JPanel filePanel = new JPanel(new BorderLayout());
-	DefaultListModel fileListModel = new DefaultListModel();
-	JList fileSelectField = new JList(); 
+	DefaultListModel<String> fileListModel = new DefaultListModel<String>();
+	JList<String> fileSelectField = new JList<String>(); 
 	JScrollPane fileScroll = new JScrollPane(fileSelectField);
 	//File Select Button Panel Components
 	JPanel fileButtonPanel = new JPanel();

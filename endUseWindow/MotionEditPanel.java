@@ -32,9 +32,9 @@ public class MotionEditPanel extends JPanel implements ActionListener{
 	JTextField siteIDInput = new JTextField(20); //site id
 	JTextField sourceIDInput = new JTextField(20); //source id
 	JTextField sourceNameInput = new JTextField(20); //source name
-	JComboBox roomIDInput = new JComboBox(); //room id
-	JComboBox sourceTypeInput = new JComboBox(Source.getSourceTypeList()); //source type
-	JComboBox measurementTypeInput = new JComboBox(Source.getMeasurementList()); //measurement type
+	JComboBox<String> roomIDInput = new JComboBox<String>(); //room id
+	JComboBox<String> sourceTypeInput = new JComboBox<String>(Source.getSourceTypeList()); //source type
+	JComboBox<String> measurementTypeInput = new JComboBox<String>(Source.getMeasurementList()); //measurement type
 	JTextField notesInput = new JTextField(20); //notes
 	
 	Connection dbConn;

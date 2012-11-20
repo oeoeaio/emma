@@ -81,7 +81,7 @@ public class SitesPanel extends JPanel implements ActionListener,TableModelListe
 				
 		updateSites();
 		
-		sitesTable.getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(new JComboBox(new String[] {"","NSW","VIC","QLD","ACT","WA","SA","TAS","NT"})));
+		sitesTable.getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(new JComboBox<String>(new String[] {"","NSW","VIC","QLD","ACT","WA","SA","TAS","NT"})));
 		
 		this.add(topPanel,BorderLayout.NORTH);
 		this.add(tablePanel,BorderLayout.CENTER);

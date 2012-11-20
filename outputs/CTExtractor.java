@@ -39,7 +39,7 @@ public class CTExtractor extends JFrame implements Runnable,ItemListener,ActionL
 	//Installation Panel
 	JPanel instPanel = new JPanel(new FlowLayout());
 	JLabel installation_id_selectL = new JLabel("Installation ID");
-	JComboBox installation_id_select = new JComboBox();
+	JComboBox<Integer> installation_id_select = new JComboBox<Integer>();
 	
 	//Radio Button Panel
 	JPanel radPanel = new JPanel(new FlowLayout());
@@ -60,9 +60,9 @@ public class CTExtractor extends JFrame implements Runnable,ItemListener,ActionL
 	//Date Panel
 	JPanel datePanel = new JPanel(new FlowLayout());
 	JLabel startDateL = new JLabel("Start Date");
-	JComboBox startDateS = new JComboBox();
+	JComboBox<String> startDateS = new JComboBox<String>();
 	JLabel endDateL = new JLabel("End Date");
-	JComboBox endDateS = new JComboBox();
+	JComboBox<String> endDateS = new JComboBox<String>();
 	JLabel exclusiveL = new JLabel("(exclusive)");
 	
 	//Start Panel

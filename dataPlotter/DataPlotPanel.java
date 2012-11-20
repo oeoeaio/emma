@@ -66,15 +66,15 @@ public class DataPlotPanel extends JPanel implements ActionListener,ListSelectio
 	//Date Panel
 	JPanel datePanel = new JPanel(new FlowLayout());
 	JLabel startDateL = new JLabel("Start Date");
-	JComboBox startDateS = new JComboBox();
+	JComboBox<String> startDateS = new JComboBox<String>();
 	JLabel startTimeL = new JLabel("Start Time");
-	JComboBox startHourS = new JComboBox(new String[] {"00","01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23"});
-	JComboBox startMinS = new JComboBox(new String[] {"00","05","10","15","20","25","30","35","40","45","50","55"});
+	JComboBox<String> startHourS = new JComboBox<String>(new String[] {"00","01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23"});
+	JComboBox<String> startMinS = new JComboBox<String>(new String[] {"00","05","10","15","20","25","30","35","40","45","50","55"});
 	JLabel endDateL = new JLabel("               End Date");
-	JComboBox endDateS = new JComboBox();
+	JComboBox<String> endDateS = new JComboBox<String>();
 	JLabel endTimeL = new JLabel("End Time");
-	JComboBox endHourS = new JComboBox(new String[] {"00","01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23"});
-	JComboBox endMinS = new JComboBox(new String[] {"00","05","10","15","20","25","30","35","40","45","50","55"});
+	JComboBox<String> endHourS = new JComboBox<String>(new String[] {"00","01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23"});
+	JComboBox<String> endMinS = new JComboBox<String>(new String[] {"00","05","10","15","20","25","30","35","40","45","50","55"});
 	JLabel colonL = new JLabel(" : ");
 	JLabel inclusiveL = new JLabel("(inclusive)");
 	

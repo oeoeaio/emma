@@ -1868,6 +1868,7 @@ public class PDCValidator implements Runnable{
 					//System.out.println(insertHeaderSQL);
 					header_statement.executeUpdate(insertHeaderSQL);
 				}
+				headerCheckRS.close();
 			}
 		}
 		else { // if no records dated prior or equal to the start of the current file in in the database
@@ -1899,6 +1900,7 @@ public class PDCValidator implements Runnable{
 				//System.out.println(insertHeaderSQL);
 				header_statement.executeUpdate(insertHeaderSQL);
 			}
+			headerCheckRS.close();
 		}
 		headerCheckRS.close();
 	}

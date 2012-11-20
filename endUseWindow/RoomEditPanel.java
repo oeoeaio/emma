@@ -32,8 +32,8 @@ public class RoomEditPanel extends JPanel{
 	JLabel notesLabel = new JLabel("Notes:");
 	JTextField siteIDInput = new JTextField(20); //site id
 	//JTextField roomIDInput = new JTextField(20); //room id
-	JComboBox roomNumberInput = new JComboBox(new String[] {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60"}); //site name
-	JComboBox roomTypeInput = new JComboBox(Room.getRoomTypes()); //room type
+	JComboBox<String> roomNumberInput = new JComboBox<String>(new String[] {"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60"}); //site name
+	JComboBox<String> roomTypeInput = new JComboBox<String>(Room.getRoomTypes()); //room type
 	JTextField areaInput = new JTextField(20); //area
 	JTextField notesInput = new JTextField(20); //notes
 	

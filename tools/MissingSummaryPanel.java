@@ -66,14 +66,14 @@ public class MissingSummaryPanel extends JPanel implements ItemListener,ActionLi
 	//SamplePeriodPanel
 	private final JPanel samplePeriodPanel = new JPanel(new FlowLayout());
 	private final JLabel samplePeriodL = new JLabel("Sample Period");
-	private final JComboBox samplePeriodS = new JComboBox();
+	private final JComboBox<String> samplePeriodS = new JComboBox<String>();
 	
 	//Date Panel
 	private final JPanel datePanel = new JPanel(new FlowLayout());
 	private final JLabel startDateL = new JLabel("Start Date");
-	private final JComboBox startDateS = new JComboBox();
+	private final JComboBox<String> startDateS = new JComboBox<String>();
 	private final JLabel endDateL = new JLabel("End Date");
-	private final JComboBox endDateS = new JComboBox();
+	private final JComboBox<String> endDateS = new JComboBox<String>();
 	private final JLabel inclusiveL = new JLabel("(inclusive)");
 	
 	//Start Panel

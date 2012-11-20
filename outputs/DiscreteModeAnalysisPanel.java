@@ -68,14 +68,14 @@ public class DiscreteModeAnalysisPanel extends JPanel implements ItemListener,Ac
 	//SamplePeriodPanel
 	JPanel samplePeriodPanel = new JPanel(new FlowLayout());
 	JLabel samplePeriodL = new JLabel("Sample Period");
-	JComboBox samplePeriodS = new JComboBox();
+	JComboBox<String> samplePeriodS = new JComboBox<String>();
 	
 	//Date Panel
 	JPanel datePanel = new JPanel(new FlowLayout());
 	JLabel startDateL = new JLabel("Start Date");
-	JComboBox startDateS = new JComboBox();
+	JComboBox<String> startDateS = new JComboBox<String>();
 	JLabel endDateL = new JLabel("End Date");
-	JComboBox endDateS = new JComboBox();
+	JComboBox<String> endDateS = new JComboBox<String>();
 	JLabel inclusiveL = new JLabel("(inclusive)");
 	
 	//Start Panel
@@ -423,7 +423,7 @@ public class DiscreteModeAnalysisPanel extends JPanel implements ItemListener,Ac
 		JPanel topPanel = new JPanel(new BorderLayout());
 		JPanel countPanel = new JPanel(new FlowLayout());
 		JLabel modeCountL = new JLabel("No. of Modes");
-		JComboBox modeCountS = new JComboBox(new Integer[] {1,2,3,4,5});
+		JComboBox<Integer> modeCountS = new JComboBox<Integer>(new Integer[] {1,2,3,4,5});
 		JPanel thPanel = new JPanel(new FlowLayout());
 		JLabel m1L = new JLabel("|Mode 1|");
 		JLabel th1L = new JLabel(" <= ");
