@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -31,10 +30,10 @@ public class FileFeeder implements Runnable{
 	private static final int fileQueueSize = 1;
 	BlockingQueue<DataFile> fileList = new LinkedBlockingQueue<DataFile>(fileQueueSize);
 	boolean moreFilesComing = true;
-	private long totalFeederTime;
-	private long totalGetWriterTime;
-	private long totalGetTime;
-	private long totalStartTime;
+	//private long totalFeederTime;
+	//private long totalGetWriterTime;
+	//private long totalGetTime;
+	//private long totalStartTime;
 	SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	
 	FileFeeder(MySQLConnection mySQLConnection,LogWindow logWindow,ArrayList<FileIssue> fileIssueList,boolean showGUI){
@@ -68,7 +67,7 @@ public class FileFeeder implements Runnable{
 			Statement MySQL_Statement = dbConn.createStatement();
 			//DataFactorConverter dataFactorConverter = new DataFactorConverter();
 			while (moreFilesComing || !fileList.isEmpty()){ //if more data still to process or more data coming
-				Date start = new Date();
+				//Date start = new Date();
 				DataFile dataFile;
 				if ((dataFile = fileList.poll()) != null){ //something to actually write
 					synchronized(fileList){
@@ -124,15 +123,15 @@ public class FileFeeder implements Runnable{
 								ResultSet newFileIDQuery = MySQL_Statement.executeQuery("SELECT LAST_INSERT_ID()");
 								if (newFileIDQuery.next()){
 									//logWindow.println("Attempting to write data from file "+dataFile.fileName+" to database...");
-									Date fetchStart = new Date();									
+									//Date fetchStart = new Date();									
 									
 									dataFile.fileID = Integer.toString(newFileIDQuery.getInt(1));
 									dataWriterPool.addFile(dataFile);
-									Date get = new Date();
-									totalGetTime += get.getTime()-fetchStart.getTime();
-									Date fetchEnd = new Date();
-									totalStartTime += fetchEnd.getTime()-get.getTime();
-									totalGetWriterTime += fetchEnd.getTime()-fetchStart.getTime();
+									//Date get = new Date();
+									//totalGetTime += get.getTime()-fetchStart.getTime();
+									//Date fetchEnd = new Date();
+									//totalStartTime += fetchEnd.getTime()-get.getTime();
+									//totalGetWriterTime += fetchEnd.getTime()-fetchStart.getTime();
 								}
 								else{
 									fileIssueList.add(new FileIssue(dataFile.file,"FileWriteError","Could not create a new file entry in Database."));
@@ -157,8 +156,8 @@ public class FileFeeder implements Runnable{
 					}
 					
 				}
-				Date end = new Date();
-				totalFeederTime += end.getTime()-start.getTime();
+				//Date end = new Date();
+				//totalFeederTime += end.getTime()-start.getTime();
 
 				try{
 					synchronized(fileList){

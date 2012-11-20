@@ -108,7 +108,6 @@ public class MySQLConnection extends JFrame implements ActionListener{
 		portInput.setText(mySQLSettings.get("portNumber", "3306"));
 		dbNameInput.setText(mySQLSettings.get("dbName", "enduse"));
 		userInput.setText(mySQLSettings.get("userName", ""));
-		passInput.setText("princess99");
 
 		this.getContentPane().add(mainPanel, BorderLayout.CENTER);
 		this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);

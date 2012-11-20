@@ -35,7 +35,7 @@ import endUseWindow.Source;
 import endUseWindow.Temperature;
 
 public class PDCValidator implements Runnable{
-	private static final long serialVersionUID = -5055432014593221399L;
+	
 
 	//variables
 	private LogWindow logWindow;
@@ -629,7 +629,7 @@ public class PDCValidator implements Runnable{
 									}
 	
 									//send all files to file feeder
-									for (int j=0;dataFiles.peek()!=null;j++){
+									while( dataFiles.peek() != null ){
 										DataFile dataFile = dataFiles.poll();
 										/*try{
 											String fetchRangeLimitsSQL =  "SELECT min,max FROM ranges WHERE source_id = "+dataFile.sourceID+" AND site_id = "+siteID;
@@ -1732,6 +1732,7 @@ public class PDCValidator implements Runnable{
 		 */
 		if (length > Integer.MAX_VALUE) {
 			logWindow.println("Cannot process file "+fileToProcess.getName().toString()+" as it is too large.");
+			inputStream.close();
 			return null;
 		}
 		
@@ -1748,6 +1749,7 @@ public class PDCValidator implements Runnable{
 		// Ensure all the bytes have been read in
 		if (offset < bytes.length) {
 			logWindow.println("Could not completely read file " + fileToProcess.getName()+". File will be ignored.");
+			inputStream.close();
 			throw new IOException("Could not completely read file " + fileToProcess.getName());
 		}
 		

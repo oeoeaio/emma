@@ -227,7 +227,7 @@ public class DiscreteModeAnalysisPanel extends JPanel implements ItemListener,Ac
 				minCal.setTimeInMillis(minMaxResults.getLong("min_date")*1000);
 				long maxCal = minMaxResults.getLong("max_date")*1000;
 			
-				for (int i=0;minCal.getTimeInMillis() <= maxCal;i++){
+				while(minCal.getTimeInMillis() <= maxCal){
 					dateRange.add(minCal.getTimeInMillis());
 					startDateS.addItem(dateFormatter.format(minCal.getTimeInMillis()));
 					minCal.add(Calendar.DATE, 1);

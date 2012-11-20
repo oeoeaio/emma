@@ -168,6 +168,8 @@ public class getSNDates extends Thread{
 
 	            sb.append( ( char ) readByte );
 	        }
+	        
+	        fileHandler.close();
 
 	        String lastLine = sb.reverse().toString();
 	        

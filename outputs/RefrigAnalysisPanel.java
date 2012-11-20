@@ -346,7 +346,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 				maxCal.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 				maxCal.setTimeInMillis(minMaxResults.getLong("max_date")*1000);
 			
-				for (int i=0;minCal.getTimeInMillis() <= maxCal.getTimeInMillis();i++){
+				while( minCal.getTimeInMillis() <= maxCal.getTimeInMillis() ){
 					dateRange.add(minCal.getTimeInMillis());
 					startDateS.addItem(dateFormatter.format(minCal.getTimeInMillis()));
 					minCal.add(Calendar.DATE, 1);

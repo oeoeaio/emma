@@ -34,7 +34,7 @@ public class DataWriterPool extends JFrame implements Runnable{
 	boolean moreFilesComing = true;
 	private LogWindow logWindow;
 		
-	private long totalWaitTime = 0;
+	//private long totalWaitTime = 0;
 	private long totalCompWaitTime = 0;
 	
 	DataWriterPool(MySQLConnection mySQLConnection,LogWindow logWindow,boolean showGUI){
@@ -83,53 +83,53 @@ public class DataWriterPool extends JFrame implements Runnable{
 		while (moreFilesComing || !fileList.isEmpty()){ //if more data coming or data still to process
 			//System.out.println("lala1");
 			//while(!fileList.isEmpty()){  //if data still to process
-				Date start = new Date();
-				final DataFile dataFile;
-				if ((dataFile = fileList.poll()) != null){ //something to actually write
-					synchronized(fileList){
-						fileList.notify();
-					}
-					DataWriter dataWriter = null;
-					synchronized(writerPool){
-						while ((dataWriter = writerPool.poll()) == null){
-							try {
-								writerPool.wait();
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-								break;
-							}
+			//Date start = new Date();
+			final DataFile dataFile;
+			if ((dataFile = fileList.poll()) != null){ //something to actually write
+				synchronized(fileList){
+					fileList.notify();
+				}
+				DataWriter dataWriter = null;
+				synchronized(writerPool){
+					while ((dataWriter = writerPool.poll()) == null){
+						try {
+							writerPool.wait();
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							break;
 						}
 					}
-					Date startComponents = new Date();
-					totalWaitTime += startComponents.getTime()-start.getTime();
-					
-					dataWriter.setDataFile(dataFile);
-					
-					if (showGUI){
-						final JProgressBar progressBar = new JProgressBar(0,dataFile.dataList.size());
-						progressBar.setStringPainted(true);
-						dataWriter.setProgressBar(progressBar);
-						
-						SwingUtilities.invokeLater(new Runnable(){
-							public void run(){
-								JPanel newDetailsPanel = new JPanel(new GridLayout(1,3));
-								newDetailsPanel.add(new JLabel(dataFile.siteID));
-								newDetailsPanel.add(new JLabel(dataFile.sourceID));
-								newDetailsPanel.add(new JLabel((dataFile.fileName.length()>16?dataFile.fileName.substring(0, 13)+"...":dataFile.fileName)));
-								mainGridPanel.add(newDetailsPanel);
-								mainGridPanel.add(progressBar);
-								mainGridPanel.revalidate();
-								mainScroll.getVerticalScrollBar().setValue(mainScroll.getVerticalScrollBar().getMaximum());
-								
-							}
-						});
-						this.setVisible(true);
-					}
-					Date end = new Date();
-					totalCompWaitTime += end.getTime()-startComponents.getTime();
-					new Thread (dataWriter).start();
 				}
+				Date startComponents = new Date();
+				//totalWaitTime += startComponents.getTime()-start.getTime();
+
+				dataWriter.setDataFile(dataFile);
+
+				if (showGUI){
+					final JProgressBar progressBar = new JProgressBar(0,dataFile.dataList.size());
+					progressBar.setStringPainted(true);
+					dataWriter.setProgressBar(progressBar);
+
+					SwingUtilities.invokeLater(new Runnable(){
+						public void run(){
+							JPanel newDetailsPanel = new JPanel(new GridLayout(1,3));
+							newDetailsPanel.add(new JLabel(dataFile.siteID));
+							newDetailsPanel.add(new JLabel(dataFile.sourceID));
+							newDetailsPanel.add(new JLabel((dataFile.fileName.length()>16?dataFile.fileName.substring(0, 13)+"...":dataFile.fileName)));
+							mainGridPanel.add(newDetailsPanel);
+							mainGridPanel.add(progressBar);
+							mainGridPanel.revalidate();
+							mainScroll.getVerticalScrollBar().setValue(mainScroll.getVerticalScrollBar().getMaximum());
+
+						}
+					});
+					this.setVisible(true);
+				}
+				Date end = new Date();
+				totalCompWaitTime += end.getTime()-startComponents.getTime();
+				new Thread (dataWriter).start();
+			}
 			//}
 			try{
 				synchronized(fileList){

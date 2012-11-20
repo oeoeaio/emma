@@ -21,7 +21,6 @@ import endUseWindow.Source;
 
 
 public class RefrigAnalysis implements Runnable{
-	private static final long serialVersionUID = 1L;
 	
 	ArrayList<Long> datesArray;
 	ArrayList<Double> valuesArray;

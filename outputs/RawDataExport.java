@@ -108,6 +108,7 @@ public class RawDataExport implements Runnable{
 				}
 	
 				csvWriter.append("\r\n");
+				csvWriter.close();
 				logWindow.println("Done.");
 	
 				logWindow.println("Attempting to extract data from database and write to file...\r\n");					
