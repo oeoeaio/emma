@@ -936,19 +936,20 @@ public class PDCValidator implements Runnable{
 		            			if (byteToHex(fileArray[i+10]).equals("fa")){
 		            				wModHeaderDelimiters.add(modHeaderInfo);  
 		            			}
-		            			else if (byteToHex(fileArray[i+10]).equals("ff")){
-		            			//else if (byteToHex(fileArray[i+10]).equals("ff") || byteToHex(fileArray[i+10]).equals("00")){
+		            			//else if (byteToHex(fileArray[i+10]).equals("ff")){ //OLD
+		            			else if (byteToHex(fileArray[i+10]).equals("ff") || byteToHex(fileArray[i+10]).equals("00")){
 		            				ctModHeaderDelimiters.add(modHeaderInfo);
 		            			}
 		            		}
 		            		else if (byteToHex(fileArray[i+4]).equals("00") && byteToHex(fileArray[i+5]).equals("10")){
 		            			int[] blockInfo = {i,bytesToInt(fileArray[i+2],fileArray[i+3])+8};
-		            			//if (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("00")){
+		            			//if (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("00")){ //OLD
 		            			if ((byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("00")) && Arrays.equals(new int[2],concDataBlockDelimiters)){
 		            				concDataBlockDelimiters = blockInfo;
+		            				System.out.println(blockInfo[0]+" "+blockInfo[1]);
 		            			}
-		            			else if (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("ff")){
-		            			//else if ((byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("ff")) || (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("00"))){
+		            			//else if (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("ff")){ //OLD
+		            			else if ((byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("ff")) || (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("00"))){
 		            				ctModDataBlockDelimiters.add(blockInfo);
 		            			}
 		            			else if (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("fa")){
