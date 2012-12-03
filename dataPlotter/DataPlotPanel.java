@@ -25,6 +25,7 @@ import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import endUseWindow.LoadingLayerUI;
 import endUseWindow.SiteTable;
 import endUseWindow.SourceTable;
 
@@ -85,6 +86,8 @@ public class DataPlotPanel extends JPanel implements ActionListener,ListSelectio
 	//Data Plotter
 	DataPlotter dataPlotter = new DataPlotter();
 	
+	LoadingLayerUI loadingLayerUI = new LoadingLayerUI();
+    JLayer<JPanel> loadingLayer = new JLayer<JPanel>(dataPlotter, loadingLayerUI);
 	
 	//Variables
 	SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -159,7 +162,7 @@ public class DataPlotPanel extends JPanel implements ActionListener,ListSelectio
 		topPanel.add(middlePanel,BorderLayout.SOUTH);
 		
 		mainPanel.add(topPanel);
-		mainPanel.add(dataPlotter);
+		mainPanel.add(loadingLayer);
 		mainPanel.setBorder(BorderFactory.createEmptyBorder(0,50,30,50));
 		
 		siteTable.updateList(dbConn);
@@ -170,8 +173,8 @@ public class DataPlotPanel extends JPanel implements ActionListener,ListSelectio
 		if (aE.getSource()==plotButton){
 			if (sourceTable.sourceListModel.isSelectionEmpty()==false && sourceTable.getValueAt(sourceTable.getSelectedRow(),0) != null){
 				//Build dates
-				GregorianCalendar startDate = new GregorianCalendar();
-				GregorianCalendar endDate = new GregorianCalendar();
+				final GregorianCalendar startDate = new GregorianCalendar();
+				final GregorianCalendar endDate = new GregorianCalendar();
 				startDate.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 				endDate.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 				try {
@@ -179,7 +182,28 @@ public class DataPlotPanel extends JPanel implements ActionListener,ListSelectio
 					endDate.setTime(dateParser.parse(endDateS.getSelectedItem().toString()+" "+endHourS.getSelectedItem().toString()+":"+endMinS.getSelectedItem().toString()));
 					
 					if (startDate.before(endDate)){
-						dataPlotter.setData(dbConn, siteTable.getValueAt(siteTable.getSelectedRow(),0).toString(), sourceTable.getValueAt(sourceTable.getSelectedRow(),0).toString(), startDate.getTimeInMillis(), endDate.getTimeInMillis());
+						loadingLayerUI.start();
+						
+						final Thread fetchData = new Thread( //Thread to fetch missing Data in
+							new Runnable(){
+								public void run(){
+									dataPlotter.setData(dbConn, siteTable.getValueAt(siteTable.getSelectedRow(),0).toString(), sourceTable.getValueAt(sourceTable.getSelectedRow(),0).toString(), startDate.getTimeInMillis(), endDate.getTimeInMillis());
+								}
+							}
+						);
+						
+						fetchData.start(); //Fetch Missing Data
+						
+						new Thread(new Runnable(){ //new Thread to wait for missing data to complete and then ungrey window
+							public void run(){
+								try {
+									fetchData.join();
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+								loadingLayerUI.stop();
+							}
+						}).start();
 					}
 					else{
 						JOptionPane.showMessageDialog(null, "Error: Start date must be before End Date.");
