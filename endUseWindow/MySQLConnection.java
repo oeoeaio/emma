@@ -42,11 +42,11 @@ public class MySQLConnection extends JFrame implements ActionListener{
 	
 	
 	//Inputs 
-	JTextField addressInput = new JTextField(20);
+	JTextField addressInput = new JTextField(15);
 	JTextField portInput = new JTextField(4);
-	JTextField dbNameInput = new JTextField(20);
-	JTextField userInput = new JTextField(20);
-	JPasswordField passInput = new JPasswordField(20);
+	JTextField dbNameInput = new JTextField(15);
+	JTextField userInput = new JTextField(15);
+	JPasswordField passInput = new JPasswordField(15);
 	
 	//Variables
 	public String ipAddress = "";

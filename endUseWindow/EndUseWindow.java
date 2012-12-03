@@ -18,6 +18,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.WindowConstants;
 
@@ -87,17 +88,29 @@ public class EndUseWindow extends JFrame implements ActionListener{
 	Connection dbConn = null;
 
 	public static void main(String[] args) {
-		// Get the native look and feel class name
-		String nativeLF = UIManager.getSystemLookAndFeelClassName();
-
-		// Install the look and feel
 		try {
-		    UIManager.setLookAndFeel(nativeLF);
-		} catch (InstantiationException e) {
-		} catch (ClassNotFoundException e) {
-		} catch (UnsupportedLookAndFeelException e) {
-		} catch (IllegalAccessException e) {
+		    for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+		        if ("Nimbus".equals(info.getName())) {
+		            UIManager.setLookAndFeel(info.getClassName());
+		            break;
+		        }
+		    }
+		} catch (Exception e) {
+		    // If Nimbus is not available, you can set the GUI to another look and feel.
+			
+			// Get the native look and feel class name
+			String nativeLF = UIManager.getSystemLookAndFeelClassName();
+
+			// Install the look and feel
+			try {
+			    UIManager.setLookAndFeel(nativeLF);
+			} catch (InstantiationException iE) {
+			} catch (ClassNotFoundException cNFE) {
+			} catch (UnsupportedLookAndFeelException uLAFE) {
+			} catch (IllegalAccessException iAE) {
+			}
 		}
+		
 		
 		new EndUseWindow();
 	}	
