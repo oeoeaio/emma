@@ -54,14 +54,14 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 	//Refigerator Source Panel Components
 	JPanel refrigSourcePanel = new JPanel(new BorderLayout());
 	JPanel refrigSourceTitleP = new JPanel(new FlowLayout());
-	JLabel refrigSourceLabel = new JLabel("Select Source");
+	JLabel refrigSourceLabel = new JLabel("Select Refrigerator Source");
 	SourceTable refrigSourceTable = new SourceTable(DefaultListSelectionModel.SINGLE_SELECTION,new String[] {"Source ID","Source Name"});
 	JScrollPane refrigSourceScroll = new JScrollPane(refrigSourceTable);
 	
 	//Temperature Source Panel Components
 	JPanel tempSourcePanel = new JPanel(new BorderLayout());
 	JPanel tempSourceTitleP = new JPanel(new FlowLayout());
-	JLabel tempSourceLabel = new JLabel("Select Source");
+	JLabel tempSourceLabel = new JLabel("Select Temperature Source");
 	SourceTable tempSourceTable = new SourceTable(DefaultListSelectionModel.SINGLE_SELECTION,new String[] {"Source ID","Source Name"});
 	JScrollPane tempSourceScroll = new JScrollPane(tempSourceTable);
 	

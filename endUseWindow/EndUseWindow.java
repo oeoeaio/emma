@@ -264,7 +264,7 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			JFrame newFrame = new JFrame("Refrigerator Analysis");
 			newFrame.getContentPane().add(new RefrigAnalysisPanel(dbConn));
 			newFrame.setLocation(200, 200);
-			newFrame.setPreferredSize(new Dimension(600,400));
+			newFrame.setPreferredSize(new Dimension(600,700));
 			newFrame.pack();
 			newFrame.setVisible(true);
 		}

@@ -186,7 +186,7 @@ public class RefrigAnalysis implements Runnable{
 		Statement MySQL_Statement;
 		try {
 			MySQL_Statement = dbConn.createStatement();
-			if (tempSource.getSourceID()==null){ //if no temperatures required
+			if (tempSource==null){ //if no temperatures required
 				String getDataSQL = "SELECT UNIX_TIMESTAMP(date_time) AS unix_ts,value FROM data_sa WHERE site_id = "+source.getSite().getSiteID()+" AND source_id = "+source.getSourceID()+" AND date_time BETWEEN '"+(sqlDateFormatter.format(fileStartDate+(frequency*1000)))+"' AND '"+(sqlDateFormatter.format(fileEndDate+(frequency*1000)))+"'";
 				ResultSet dataResultSet = MySQL_Statement.executeQuery(getDataSQL);
 				while (dataResultSet.next()){
@@ -574,7 +574,7 @@ public class RefrigAnalysis implements Runnable{
 				
 				if (tempSource!=null){avTemp = getAverage(tempsArray.subList(periodStartRow, nextPeriodStartRow-1));}
 				String[] date_time = sqlDateFormatter.format(datesArray.get(periodStartRow)-(frequency*1000)+Math.round(frequency*1000*timeOffset)).split(" ");
-				String newLine = date_time[0]+","+date_time[1]+","+(actualPeriodAverage-pwrCorr)+","+(onTotal/onCount)+","+(offCount!=0?(offTotal/offCount):"0")+","+(valuesArray.get(nextPeriodStartRow-(nextPeriodStartRow<basePowerOffset?0:basePowerOffset))-pwrCorr)+","+threshold+","+((onCount+offCount)*(frequency/60))+","+((onCount/(onCount+offCount))*100)+"%,"+((offCount/(onCount+offCount))*100)+"%"+(tempSource==null?"":","+energy+","+(frequency/60)+","+avTemp);
+				String newLine = date_time[0]+","+date_time[1]+","+(actualPeriodAverage-pwrCorr)+","+(onTotal/onCount)+","+(offCount!=0?(offTotal/offCount):"0")+","+(valuesArray.get(nextPeriodStartRow-(nextPeriodStartRow<basePowerOffset?0:basePowerOffset))-pwrCorr)+","+threshold+","+((onCount+offCount)*(frequency/60))+","+((onCount/(onCount+offCount))*100)+"%,"+((offCount/(onCount+offCount))*100)+"%,"+energy+","+(frequency/60)+(tempSource==null?"":","+avTemp);
 				outputStream.write(newLine+"\r\n");
 			}
 		}
