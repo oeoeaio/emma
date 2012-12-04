@@ -116,8 +116,8 @@ public class RefrigAnalysis implements Runnable{
 					outputStream = new BufferedWriter(new FileWriter(outFile));
 					logWindow.println("Writing to file: "+outFile.getName());
 					outputStream.write("Project Name: "+"ADD PROJECT NAME"+"\r\n");
-					outputStream.write("Site: "+source.getSite().getSiteName()+"("+source.getSite().getSiteID()+")\r\n");
-					outputStream.write("Source: "+source.getSourceName()+"("+source.getSourceID()+"\r\n");
+					outputStream.write("Site: "+source.getSite().getSiteName()+"(id:"+source.getSite().getSiteID()+")\r\n");
+					outputStream.write("Source: "+source.getSourceName()+"(id:"+source.getSourceID()+")\r\n");
 					outputStream.write("Start Date: "+sqlDateFormatter.format(startDate)+"\r\n");
 					outputStream.write("End Date: "+sqlDateFormatter.format(endDate)+"\r\n");
 					outputStream.write((freqList.size()>1?"Frequencies: ":"Frequency: ")+freqString+" seconds\r\n");

@@ -98,6 +98,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 	
 	//Variables
 	SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+	SimpleDateFormat sqlDateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	Calendar startDate = new GregorianCalendar();
 	String inDateFormat = new String();
 	int inFirstRow = -1; //the first row that valid data appears in input file
@@ -238,16 +239,39 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 		}
 		else if (aE.getSource()==analyseButton){
 			if (refrigSourceTable.sourceListModel.isSelectionEmpty()==false && refrigSourceTable.getValueAt(refrigSourceTable.getSelectedRow(),0) != null){
+				Source refrigSource = refrigSourceTable.sourceList.get(refrigSourceTable.getSelectedRow());
+				long startDate = dateRange.get(startDateS.getSelectedIndex());
+				long endDate = dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex());
 				if (outFile != null){
 					if (threshInput1.getText().matches("\\d{1,5}") && threshInput2.getText().matches("\\d{1,5}")){
 						if (Double.parseDouble(threshInput1.getText())<=Double.parseDouble(threshInput2.getText()) || (Double.parseDouble(threshInput1.getText())>0 && Double.parseDouble(threshInput2.getText())==0)){
 							if (pwrCorrT.getText().matches("\\d{1,2}[.]\\d{1,2}")){
-								Source tempSource = null;
-								if (tempSourceTable.sourceListModel.isSelectionEmpty()==false){
-									tempSource = tempSourceTable.sourceList.get(tempSourceTable.getSelectedRow());
+								long[] lowFreqFileDates = null;
+								try{
+									String findLowFreqFiles = "SELECT UNIX_TIMESTAMP(start_date) AS start_date,UNIX_TIMESTAMP(end_date) AS end_date FROM files WHERE site_id = "+refrigSource.getSite().getSiteID()+" AND source_id = "+refrigSource.getSourceID()+" AND end_date >= '"+sqlDateFormatter.format(startDate)+"' AND start_date <= '"+sqlDateFormatter.format(endDate)+"' AND frequency >= 600";
+									ResultSet lowFrewFilesRS = dbConn.createStatement().executeQuery(findLowFreqFiles);
+									if (lowFrewFilesRS.next()){
+										lowFreqFileDates = new long[] {lowFrewFilesRS.getLong("start_date"), lowFrewFilesRS.getLong("end_date")};
+									}
+									
+									lowFrewFilesRS.close();
+								} catch(SQLException sE){
+									
 								}
-								Thread analysisThread = new Thread(new RefrigAnalysis(dbConn,new LogWindow("Refrigerator Analysis Log"),refrigSourceTable.sourceList.get(refrigSourceTable.getSelectedRow()),tempSource,dateRange.get(startDateS.getSelectedIndex()),dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()),outFile,Double.parseDouble(threshInput1.getText()),Double.parseDouble(threshInput2.getText()),Integer.parseInt(basePowerS.getSelectedItem().toString()),Double.parseDouble(pwrCorrT.getText())));
-								analysisThread.start();
+								boolean processOk = true;
+								if (lowFreqFileDates!=null){ // If found some files with low frequency
+									int response = JOptionPane.showConfirmDialog(this, "Refrigerator data with low sample frequency exists between "+dateFormatter.format(lowFreqFileDates[0]*1000)+" and "+dateFormatter.format(lowFreqFileDates[1]*1000)+"\r\nIt is suggested that these data are too infrequent to be useful.\r\nWould you like to continue anyway?","Warning: Infrequent data detected",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE);
+									processOk = (response==JOptionPane.YES_OPTION);
+								}
+								if (processOk){
+									Source tempSource = null;
+									if (tempSourceTable.sourceListModel.isSelectionEmpty()==false){
+										tempSource = tempSourceTable.sourceList.get(tempSourceTable.getSelectedRow());
+									}
+									Thread analysisThread = new Thread(new RefrigAnalysis(dbConn,new LogWindow("Refrigerator Analysis Log"),refrigSourceTable.sourceList.get(refrigSourceTable.getSelectedRow()),tempSource,dateRange.get(startDateS.getSelectedIndex()),dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()),outFile,Double.parseDouble(threshInput1.getText()),Double.parseDouble(threshInput2.getText()),Integer.parseInt(basePowerS.getSelectedItem().toString()),Double.parseDouble(pwrCorrT.getText())));
+									analysisThread.start();
+								}
+								
 							}
 							else{
 						       	JOptionPane.showMessageDialog(null, "Error Code 006\r\nPlease enter a positive decimal for power correction eg. '0.4'.\r\nYou may specify up to two (2) decimal places.\r\nIf you do not wish to use a power correction, please use '0.0'.", "Error", JOptionPane.ERROR_MESSAGE);
