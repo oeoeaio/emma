@@ -36,11 +36,11 @@ public class TimeOfDayAnalysis implements Runnable{
 	private final long endDate;
 	private final int samplePeriod;
 	private final String analysisType;
-	private final String splitType;
+	private final LinkedList<String> splitTypes;
 	private final boolean multipleSites;
 	
 	
-	TimeOfDayAnalysis(LogWindow logWindow,Connection dbConn,LinkedList<Source> sourceList,LinkedList<long[]> customStartAndEndDates,LinkedList<String> rangeTitles,long startDate,long endDate,int samplePeriod,String analysisType,String splitType,boolean multipleSites){
+	TimeOfDayAnalysis(LogWindow logWindow,Connection dbConn,LinkedList<Source> sourceList,LinkedList<long[]> customStartAndEndDates,LinkedList<String> rangeTitles,long startDate,long endDate,int samplePeriod,String analysisType,LinkedList<String> splitTypes,boolean multipleSites){
 		dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		csvDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		sqlDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
@@ -53,7 +53,7 @@ public class TimeOfDayAnalysis implements Runnable{
 		this.endDate = endDate;
 		this.samplePeriod = samplePeriod;
 		this.analysisType = analysisType;
-		this.splitType = splitType;
+		this.splitTypes = splitTypes;
 		this.multipleSites = multipleSites;
 	}
 	
@@ -81,7 +81,7 @@ public class TimeOfDayAnalysis implements Runnable{
 					//Headers
 					logWindow.printString("Writing Headers: "+fileToWrite.getName()+"...");
 					
-					if (splitType.equals("none")){
+					if (splitTypes.isEmpty()){
 						if (multipleSites){
 							csvWriter.append("Sites: Many,");
 							
@@ -125,8 +125,8 @@ public class TimeOfDayAnalysis implements Runnable{
 
 					try {						
 						int periodsRequired = (int)(1440/samplePeriod);
-						Double[][] timeOfDayData = new Double [periodsRequired][sourceList.size()];
-						Double[][] countData = new Double [periodsRequired][sourceList.size()];
+						Double[][] timeOfDayData = new Double [periodsRequired][sourceList.size()*(splitTypes.contains("DayType")?2:1)];
+						Double[][] countData = new Double [periodsRequired][sourceList.size()*(splitTypes.contains("DayType")?2:1)];
 						int[] rowDayMinutes = new int[periodsRequired];
 						String[] rowTimeStrings = new String[periodsRequired];
 						
@@ -142,8 +142,9 @@ public class TimeOfDayAnalysis implements Runnable{
 							rowTimeStrings[i] = (rowHours<10?"0"+rowHours:rowHours)+":"+(rowMins<10?"0"+rowMins:rowMins);
 						}
 						
-						if (splitType.equals("monthly")){
-							csvWriter.append("Site,Source,Month,");
+						
+						if (splitTypes.isEmpty() == false){
+							csvWriter.append("Site,Source,"+(splitTypes.contains("Monthly")?"Month,":"")+(splitTypes.contains("DayType")?"DayType,":""));
 							for (int i=0;i<rowTimeStrings.length;i++){
 								csvWriter.append(rowTimeStrings[i]);
 								csvWriter.append(",");
@@ -155,7 +156,7 @@ public class TimeOfDayAnalysis implements Runnable{
 								}
 							}
 							csvWriter.append("\r\n");
-							csvWriter.append("Site,Source,Month,");
+							csvWriter.append("Site,Source,"+(splitTypes.contains("Monthly")?"Month,":"")+(splitTypes.contains("DayType")?"DayType,":""));
 							for (int i=0;i<rowTimeStrings.length;i++){
 								csvWriter.append("Value");
 								csvWriter.append(",");
@@ -180,12 +181,14 @@ public class TimeOfDayAnalysis implements Runnable{
 							groupByString = "GROUP BY blockHour,blockMinute";
 						}
 						else if (samplePeriod == 60){
-							blockString = "CASE CEIL(HOUR(date_time)+MINUTE(date_time)/60) WHEN 24 THEN 0 ELSE CEIL(HOUR(date_time)+MINUTE(date_time)/60) END AS blockHour";
+							blockString = "CASE WHEN CEIL(HOUR(date_time)+MINUTE(date_time)/60) = 0 THEN 24 ELSE CEIL(HOUR(date_time)+MINUTE(date_time)/60) END AS blockHour";
 							groupByString = "GROUP BY blockHour";
 						}
 						else{
 							logWindow.println("ERROR: Sample period not recognised, data will not be processed");
 						}
+						
+						if (splitTypes.contains("DayType")){ groupByString += ",dayType"; }
 
 						if (blockString.equals("") == false && groupByString.equals("") == false){ //required variables are present
 							for (int i=0;i<sourceList.size();i++){
@@ -199,8 +202,8 @@ public class TimeOfDayAnalysis implements Runnable{
 								//String minDateString = csvDateFormatter.format(startDate)+" 00:01:00";
 								//String maxDateString = csvDateFormatter.format(endDate)+" 00:00:00";
 
-								String minDateString = csvDateFormatter.format(customStartAndEndDates.get(i)[0]);
-								String maxDateString = csvDateFormatter.format(customStartAndEndDates.get(i)[1]);
+								String minDateString = sqlDateFormatter.format(customStartAndEndDates.get(i)[0]);
+								String maxDateString = sqlDateFormatter.format(customStartAndEndDates.get(i)[1]);
 
 								
 								String avgTotString = "ROUND(AVG(value),3) AS analysisValue,COUNT(*) AS record_count, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
@@ -236,6 +239,8 @@ public class TimeOfDayAnalysis implements Runnable{
 									}
 								}
 								
+								if (splitTypes.contains("DayType")){ avgTotString += ",IF(DAYOFWEEK(DATE_ADD(date_time,INTERVAL -1 MINUTE)) IN (1,7),'Weekend','Weekday') AS dayType"; }
+								
 
 								if (minDateString.equals("") == false && maxDateString.equals("") == false && avgTotString.equals("") == false){ //max sure required variables are in place
 									String getDataSQL =  "SELECT "+blockString+","+avgTotString+" FROM data_sa "+joinString+" WHERE data_sa.site_id = "+sourceList.get(i).getSite().getSiteID()+" AND data_sa.source_id = "+sourceList.get(i).getSourceID()+" AND data_sa.date_time BETWEEN '"+minDateString+"' AND '"+maxDateString+"' "+groupByString;
@@ -246,31 +251,88 @@ public class TimeOfDayAnalysis implements Runnable{
 									int rowCounter = 0;
 
 									int dbTime = 0;
+									
+									String currDayType = "Weekday";
 									while (getDataRS.next()){
 										if (samplePeriod == 10 || samplePeriod == 1){
 											dbTime = getDataRS.getInt("blockHour")*60+getDataRS.getInt("blockMinute");
 											while (rowDayMinutes[rowCounter]<dbTime){
-												timeOfDayData[rowCounter][i] = null;
-												countData[rowCounter][i] = null;
-												rowCounter++;
+												if (splitTypes.contains("DayType")){
+													timeOfDayData[rowCounter][i*2] = null;
+													timeOfDayData[rowCounter][i*2+1] = null;
+													countData[rowCounter][i*2] = null;
+													countData[rowCounter][i*2+1] = null;
+													rowCounter++;
+													currDayType = "Weekday";
+												}
+												else{
+													timeOfDayData[rowCounter][i] = null;
+													countData[rowCounter][i] = null;
+													rowCounter++;
+												}
 											}
 										}
 										else if (samplePeriod == 60){
 											dbTime = getDataRS.getInt("blockHour")*60;
 											while (rowDayMinutes[rowCounter]<dbTime){
-												timeOfDayData[rowCounter][i] = null;
-												countData[rowCounter][i] = null;
-												rowCounter++;
+												if (splitTypes.contains("DayType")){
+													timeOfDayData[rowCounter][(i*2)] = null;
+													timeOfDayData[rowCounter][(i*2)+1] = null;
+													countData[rowCounter][(i*2)] = null;
+													countData[rowCounter][(i*2)+1] = null;
+													rowCounter++;
+													currDayType = "Weekday";
+												}
+												else{
+													timeOfDayData[rowCounter][i] = null;
+													countData[rowCounter][i] = null;
+													rowCounter++;
+												}
 											}
 										}
+										System.out.println(rowCounter+" "+dbTime+" "+rowDayMinutes[rowCounter]+" "+currDayType+" "+getDataRS.getDouble("analysisValue"));
+										if (splitTypes.contains("DayType")){
+												if (getDataRS.getString("dayType").equals(currDayType)){
 
-										timeOfDayData[rowCounter][i] = getDataRS.getDouble("analysisValue");
-										
-										if(getDataRS.wasNull()){timeOfDayData[rowCounter][i] = null;}
-										
-										countData[rowCounter][i] = getDataRS.getDouble("pointCount");
-										
-										if (getDataRS.wasNull()){countData[rowCounter][i] = null;}
+													timeOfDayData[rowCounter][(i*2)+(currDayType.equals("Weekday")?0:1)] = getDataRS.getDouble("analysisValue");
+													
+													if(getDataRS.wasNull()){timeOfDayData[rowCounter][(i*2)+(currDayType.equals("Weekday")?0:1)] = null;}
+													
+													countData[rowCounter][(i*2)+(currDayType.equals("Weekday")?0:1)] = getDataRS.getDouble("pointCount");
+													
+													if (getDataRS.wasNull()){countData[rowCounter][(i*2)+(currDayType.equals("Weekday")?0:1)] = null;}
+													
+													if (currDayType.equals("Weekday")){
+														currDayType = "Weekend";
+														rowCounter--; //keep current date when day type is weekday
+													}
+													else{
+														currDayType = "Weekday";
+													}
+												}
+												else{
+													if (currDayType.equals("Weekday")){
+														timeOfDayData[rowCounter][i*2] = null;
+														countData[rowCounter][i*2] = null;
+														currDayType = "Weekend";
+														rowCounter--; //keep current date when day type is weekend
+													}
+													else{
+														timeOfDayData[rowCounter][(i*2)+1] = null;
+														countData[rowCounter][(i*2)+1] = null;
+														currDayType = "Weekday";
+													}
+												}
+										}else{
+											timeOfDayData[rowCounter][i] = getDataRS.getDouble("analysisValue");
+											System.out.println("Good: "+getDataRS.getDouble("analysisValue"));
+											
+											if(getDataRS.wasNull()){timeOfDayData[rowCounter][i] = null;}
+											
+											countData[rowCounter][i] = getDataRS.getDouble("pointCount");
+											
+											if (getDataRS.wasNull()){countData[rowCounter][i] = null;}
+										}
 
 										rowCounter++;
 									}
@@ -298,23 +360,7 @@ public class TimeOfDayAnalysis implements Runnable{
 								}
 							}
 						}*/
-						if (splitType.equals("monthly")){
-							for (int i=0;i<sourceList.size();i++){
-								csvWriter.append(sourceList.get(i).getSite().getSiteName()+","+sourceList.get(i).getSourceName()+","+rangeTitles.get(i)+",");
-								for (int j=0;j<periodsRequired;j++){
-									csvWriter.append((timeOfDayData[j][i]==null ? "null" : Double.toString(timeOfDayData[j][i])));
-									csvWriter.append(",");
-								}
-								for (int j=0;j<periodsRequired;j++){
-									csvWriter.append((countData[j][i]==null ? "null" : Double.toString(countData[j][i])));
-									if (j<periodsRequired-1){
-										csvWriter.append(",");
-									}
-								}
-								csvWriter.append("\r\n");
-							}
-						}
-						else if (splitType.equals("none")){
+						if (splitTypes.isEmpty()){
 							for(int j=0;j<periodsRequired;j++){
 								csvWriter.append(rowTimeStrings[j]+",");
 								for (int i=0;i<sourceList.size();i++){
@@ -324,6 +370,26 @@ public class TimeOfDayAnalysis implements Runnable{
 									}
 								}
 								csvWriter.append("\r\n");
+							}
+						}
+						else {
+							int dayTypesMult = splitTypes.contains("DayType")?2:1;
+							System.out.println(dayTypesMult);
+							for (int i=0;i<sourceList.size();i++){
+								for (int j=0;j<dayTypesMult;j++){ //only actually does anything if need to split by day
+									csvWriter.append(sourceList.get(i).getSite().getSiteName()+","+sourceList.get(i).getSourceName()+","+(splitTypes.contains("Monthly")?rangeTitles.get(i)+",":"")+(splitTypes.contains("DayType")?(j==0?"W/D,":"W/E,"):""));
+									for (int k=0;k<periodsRequired;k++){
+										csvWriter.append((timeOfDayData[k][(i*dayTypesMult)+j]==null ? "null" : Double.toString(timeOfDayData[k][(i*dayTypesMult)+j])));
+										csvWriter.append(",");
+									}
+									for (int k=0;k<periodsRequired;k++){
+										csvWriter.append((countData[k][(i*dayTypesMult)+j]==null ? "null" : Double.toString(countData[k][(i*dayTypesMult)+j])));
+										if (k<periodsRequired-1){
+											csvWriter.append(",");
+										}
+									}
+									csvWriter.append("\r\n");
+								}
 							}
 						}
 						

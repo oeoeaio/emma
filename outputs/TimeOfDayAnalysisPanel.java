@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -22,6 +23,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -79,15 +81,15 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 
 	//Analysis Type Panel
 	private final JPanel analysisTypePanel = new JPanel(new FlowLayout());
-	private final JLabel analysisTypeL = new JLabel("Analysis Split:  ");
+	private final JLabel analysisTypeL = new JLabel("Analysis Type:  ");
 	private final JRadioButton normalRadio = new JRadioButton("Normal TOD");
 	private final JRadioButton circuitKnownRadio = new JRadioButton("Circuit Known TOD");
 	
 	//Analysis Split Panel
 	private final JPanel analysisSplitPanel = new JPanel(new FlowLayout());
-	private final JLabel analysisPeriodL = new JLabel("Analysis Split:  ");
-	private final JRadioButton monthlyRadio = new JRadioButton("Monthly");
-	private final JRadioButton selectionRadio = new JRadioButton("No Split");
+	private final JLabel analysisPeriodL = new JLabel("Split By:  ");
+	private final JCheckBox monthlyCheck = new JCheckBox("Month");
+	private final JCheckBox dayTypeCheck = new JCheckBox("Weekend/Weekday");
 	
 	//SamplePeriodPanel
 	private final JPanel samplePeriodPanel = new JPanel(new FlowLayout());
@@ -169,8 +171,8 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 		normalRadio.setSelected(true);
 		
 		analysisSplitPanel.add(analysisPeriodL);
-		analysisSplitPanel.add(monthlyRadio);
-		analysisSplitPanel.add(selectionRadio);
+		analysisSplitPanel.add(monthlyCheck);
+		analysisSplitPanel.add(dayTypeCheck);
 		
 		datePanel.add(startDateL);
 		datePanel.add(startDateS);
@@ -188,10 +190,6 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 		periodButtonGroup.add(normalRadio);
 		periodButtonGroup.add(circuitKnownRadio);
 		
-		ButtonGroup splitButtonGroup = new ButtonGroup();
-		splitButtonGroup.add(monthlyRadio);
-		splitButtonGroup.add(selectionRadio);
-		
 		siteSelectionType.addItemListener(this);
 		allSources.addActionListener(this);
 		noSources.addActionListener(this);
@@ -205,7 +203,7 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 		this.add(mainPanel,BorderLayout.CENTER);
 	}
 	
-	void populateStartDate() throws SQLException,Exception{
+	/*void populateStartDate() throws SQLException,Exception{
 		startDateS.removeActionListener(this);
 		startDateS.removeAllItems();
 		dateRange.clear();
@@ -254,6 +252,86 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 			endDateS.addItem(dateFormatter.format(dateRange.get(i)));
 		}
 		endDateS.setEnabled(true);
+	}*/
+	
+	void populateStartDate() throws SQLException,Exception{
+		startDateS.removeItemListener(this);
+		long startDate = 0;
+		if (dateRange.size()>0 && startDateS.getSelectedIndex()!=-1 && endDateS.getSelectedIndex()!=-1){
+			startDate = dateRange.get(startDateS.getSelectedIndex());
+		}
+
+		startDateS.removeAllItems();
+		dateRange.clear();
+		if (sourceTable.sourceListModel.isSelectionEmpty()==false && sourceTable.getValueAt(sourceTable.getSelectedRow(),0).toString()!=null){
+			
+			String sourceList = "(";
+			for (int i=0;i<sourceTable.getSelectedRows().length;i++){
+				sourceList = sourceList + sourceTable.getValueAt(sourceTable.getSelectedRows()[i],0) + (i<sourceTable.getSelectedRows().length-1?",":"");
+			}
+			sourceList = sourceList + ")";
+			
+			Statement MySQL_Statement = dbConn.createStatement();
+			//Date before = new Date();
+			String getMinMaxSQL = "SELECT UNIX_TIMESTAMP(DATE(MIN(start_date))) AS min_date,UNIX_TIMESTAMP(DATE_ADD(DATE(MAX(end_date)),INTERVAL 1 DAY)) AS max_date FROM files WHERE"+(siteSelectionType.getSelectedItem().equals("All")?"":" site_id = "+siteTable.getValueAt(siteTable.getSelectedRow(),0)+" AND ")+" source_id IN "+sourceList;
+			//System.out.println(getMinMaxSQL);
+			ResultSet minMaxResults = MySQL_Statement.executeQuery(getMinMaxSQL);
+			//System.out.println(new Date().getTime()-before.getTime());
+			if (minMaxResults.next()){
+				Calendar minCal = Calendar.getInstance();
+				minCal.setTimeZone(TimeZone.getTimeZone("GMT+10"));
+				minCal.setTimeInMillis(minMaxResults.getLong("min_date")*1000);
+				long maxCal = minMaxResults.getLong("max_date")*1000;
+			
+				while(minCal.getTimeInMillis() < maxCal){
+					dateRange.add(minCal.getTimeInMillis());
+					startDateS.addItem(dateFormatter.format(minCal.getTimeInMillis()));
+					minCal.add(Calendar.DATE, 1);
+				}
+				dateRange.add(minCal.getTimeInMillis()); //add one additional date (so "inclusive" works)
+				startDateS.setEnabled(true);
+				
+				if (startDate > 0 && dateRange.indexOf(startDate) >= 0){
+					int startIndex = dateRange.indexOf(startDate);
+					startDateS.setSelectedIndex(startIndex);
+				}
+				
+				populateEndDate();
+			}
+			else{
+				throw new Exception("ERR:NoData");
+			}
+			//System.out.println(new Date().getTime()-before.getTime());
+		}
+		else{ //This should never be able to happen
+			throw new Exception("NoSource");
+		}
+		
+		startDateS.addItemListener(this);
+	}
+	
+	void populateEndDate(){
+		long endDate = 0;
+		SimpleDateFormat dateParser = new SimpleDateFormat("dd/MM/yyyy");
+		dateParser.setTimeZone(TimeZone.getTimeZone("GMT+10"));
+		
+		if (endDateS.getSelectedIndex()!=-1){
+			try{
+				endDate = dateParser.parse(endDateS.getSelectedItem().toString()).getTime();
+			}
+			catch (ParseException pE){
+				//do nothing
+			}
+		}
+		endDateS.removeAllItems();
+		for (int i=Math.max(0,startDateS.getSelectedIndex());i<dateRange.size()-1;i++){
+			endDateS.addItem(dateFormatter.format(dateRange.get(i)));
+		}
+		endDateS.setEnabled(true);
+		if (endDateS.getItemCount() > 0 && endDate > 0 && dateRange.indexOf(endDate) >= 0){
+			int endIndex = Math.max(0, Math.min(dateRange.size()-1, dateRange.indexOf(endDate))-startDateS.getSelectedIndex());
+			endDateS.setSelectedIndex(endIndex);
+		}
 	}
 
 	@Override
@@ -294,18 +372,20 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 			}
 			
 			long startDate = dateRange.get(startDateS.getSelectedIndex());
-			long endDate = dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex());
+			long endDate = dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()+1);
 			int samplePeriod = Integer.parseInt(samplePeriodS.getSelectedItem().toString());
 			String analysisType = (normalRadio.isSelected()?"normal":"circuitKnown");
-			String splitType = (monthlyRadio.isSelected()?"monthly":"none");
+			LinkedList<String> splitTypes = new LinkedList<String>();
+			if (monthlyCheck.isSelected()){ splitTypes.add("Monthly"); }
+			if (dayTypeCheck.isSelected()){ splitTypes.add("DayType"); }
 			
 			LinkedList<long[]> customStartAndEndDates = new LinkedList<long[]>();
 			LinkedList<String> rangeTitles = new LinkedList<String>();
 			SimpleDateFormat monthFormatter = new SimpleDateFormat("yyyy-MM");
 			for (int i=0;i<sourceList.size();i++){
-				customStartAndEndDates.add(i,new long[] {startDate,endDate});
+				customStartAndEndDates.add(i,new long[] {startDate+60000,endDate});
 				rangeTitles.add("All");
-				if (monthlyRadio.isSelected()){
+				if (monthlyCheck.isSelected()){
 					long previousDate = startDate;
 					GregorianCalendar monthCal = new GregorianCalendar();
 					monthCal.setTimeZone(TimeZone.getTimeZone("GMT+10"));
@@ -324,7 +404,7 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 
 						//move to new source
 						i++;
-						customStartAndEndDates.add(i,new long[] {previousDate+6000,endDate});
+						customStartAndEndDates.add(i,new long[] {previousDate+60000,endDate});
 						rangeTitles.add(i, monthFormatter.format(previousDate));
 						monthCal.add(GregorianCalendar.MONTH,1);
 					}
@@ -332,7 +412,7 @@ public class TimeOfDayAnalysisPanel extends JPanel implements ItemListener,Actio
 			}
 			
 			if (sourceList.size() > 0){
-				Thread averageAnalysisProcess = new Thread(new TimeOfDayAnalysis(new LogWindow("Time Of Day Analysis Log"),dbConn,sourceList,customStartAndEndDates,rangeTitles,startDate,endDate,samplePeriod,analysisType,splitType,siteSelectionType.getSelectedItem().equals("All")));
+				Thread averageAnalysisProcess = new Thread(new TimeOfDayAnalysis(new LogWindow("Time Of Day Analysis Log"),dbConn,sourceList,customStartAndEndDates,rangeTitles,startDate,endDate,samplePeriod,analysisType,splitTypes,siteSelectionType.getSelectedItem().equals("All")));
 				averageAnalysisProcess.start();
 			}
 			else{
