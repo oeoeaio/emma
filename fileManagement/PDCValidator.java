@@ -946,7 +946,6 @@ public class PDCValidator implements Runnable{
 		            			//if (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("00")){ //OLD
 		            			if ((byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("00")) && Arrays.equals(new int[2],concDataBlockDelimiters)){
 		            				concDataBlockDelimiters = blockInfo;
-		            				System.out.println(blockInfo[0]+" "+blockInfo[1]);
 		            			}
 		            			//else if (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("ff")){ //OLD
 		            			else if ((byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("ff")) || (byteToHex((byte)(makeUnsigned(fileArray[i+14]) | makeUnsigned(fileArray[i+14]))).equals("00"))){
