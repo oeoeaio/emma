@@ -74,9 +74,10 @@ public class TimeOfDayAnalysis implements Runnable{
 			File fileToWrite = fileChooser.getSelectedFile();
 			
 			Date startProcessTime = new Date();
+				FileWriter csvWriter = null;
 				try{
 					if (fileToWrite.exists()){fileToWrite.delete();} //remove the file if it already exists
-					FileWriter csvWriter = new FileWriter(fileToWrite);//open the file for writing
+					csvWriter = new FileWriter(fileToWrite);//open the file for writing
 					
 					//Headers
 					logWindow.printString("Writing Headers: "+fileToWrite.getName()+"...");
@@ -399,9 +400,16 @@ public class TimeOfDayAnalysis implements Runnable{
 					
 					Date endProcessTime = new Date();
 					logWindow.println("Total Extraction Time: "+getTimeString(endProcessTime.getTime()-startProcessTime.getTime())+"\r\n");
-					csvWriter.close();
 				}	catch (IOException e){
 					JOptionPane.showMessageDialog(null,"Could not write to selected file.\r\nPlease ensure you have permission to write to this location.","Write Error",JOptionPane.ERROR_MESSAGE);
+				} finally{
+					if (csvWriter!=null){
+						try {
+							csvWriter.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 		}
 		else{ //File not selected or invalid file
