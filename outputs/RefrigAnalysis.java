@@ -92,7 +92,7 @@ public class RefrigAnalysis implements Runnable{
 					fileStartAndEndDates.add(file_count,new long[] {previousDate,endDate});
 					frequencies.add(file_count,previousFreq);
 				}*/
-				
+
 			LinkedList<long[]> fileStartAndEndDates = new LinkedList<long[]>();
 			LinkedList<Integer> frequencies = new LinkedList<Integer>();
 			while(frequencyResults.next()){
@@ -196,7 +196,6 @@ public class RefrigAnalysis implements Runnable{
 			}
 			else{ //if need temperatures
 				String getDataSQL = "CALL getRefrigAnalysisData("+source.getSite().getSiteID()+","+source.getSourceID()+","+tempSource.getSourceID()+",'"+sqlDateFormatter.format(fileStartDate)+"','"+sqlDateFormatter.format(fileEndDate)+"')";
-				//System.out.println(getDataSQL);
 				ResultSet dataResultSet = MySQL_Statement.executeQuery(getDataSQL);
 				
 				while (dataResultSet.next()){
@@ -226,12 +225,12 @@ public class RefrigAnalysis implements Runnable{
 		for (int i=1;i<valuesArray.size();i++){
 			Double currPower = valuesArray.get(i);
 			Double nextPower = 0.0;
-			if (i<valuesArray.size()-1){nextPower = valuesArray.get(i+1);}
+			if (i<valuesArray.size()-1){ nextPower = valuesArray.get(i+1); }
+			
 			if (threshold1!=threshold2 && threshold2!=0){
 				if (prevPower<threshold1 && (currPower>=threshold1 && currPower<threshold2)){ // standby to compressor
 					if (nextPower>=threshold1 && nextPower<threshold2){ //ensures that no intermediate points are caught
 						crossoverArray.add(new int[] {i,1});
-						
 					}
 				}
 				if (prevPower>=threshold2 && (currPower>=threshold1 && currPower<threshold2)){ //defrost to compressor
@@ -255,7 +254,7 @@ public class RefrigAnalysis implements Runnable{
 					}
 				}
 				if (prevPower>threshold2 && currPower<threshold1){ //defrost to off
-					if (crossoverArray.get(crossoverArray.size()-1)[1] == 2 || crossoverArray.size() == 1){
+					if (crossoverArray.get(crossoverArray.size()-1)[1] == 3 || crossoverArray.size() == 1){
 						crossoverArray.add(new int[] {i,5});
 					}
 				}
@@ -548,7 +547,7 @@ public class RefrigAnalysis implements Runnable{
 				//diffInMins = (int)Math.round((datesArray.get(nextPeriodStartRow)-datesArray.get(periodStartRow))/(1000*60));
 				//periodAverage = (periodTotal)/(nextPeriodStartRow-periodStartRow);
 				Double actualPeriodAverage = (onTotal+offTotal)/(onCount+offCount);
-				Double energy = onTotal + offTotal;
+				Double energy = (onTotal + offTotal)*(frequency/60)/60;
 				Double avTemp = 0.0;
 				int threshold = crossoverArray.get(i-1)[1];
 				if (Math.abs((int)Math.round((datesArray.get(nextPeriodStartRow)-datesArray.get(periodStartRow))/(1000*60))-((onTotal+offTotal)*(frequency/60)))<(2*frequency/60)){

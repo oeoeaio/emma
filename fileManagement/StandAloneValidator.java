@@ -192,6 +192,7 @@ public class StandAloneValidator implements Runnable{
 				line = line.replace("	"," ");
 				line = line.replace(","," ");
 				String[] splitline = line.split(" ");
+
 				if (splitline.length==3 
 						&& Pattern.matches("^\\d{1,2}/\\d{1,2}/\\d\\d(\\d\\d){0,1}$",splitline[0])
 						|| Pattern.matches("^\\d\\d(\\d\\d){0,1}/\\d{1,2}/\\d{1,2}$",splitline[0])){
@@ -232,9 +233,6 @@ public class StandAloneValidator implements Runnable{
 		String line = "";
 		boolean incompleteSerial = false;
 		while ((line = inputStream.readLine()) != null) {
-			if ((rowCounter%1440==0 && (!dateSet1.isEmpty() && !dateSet2.isEmpty() && !dateSet3.isEmpty()) && (dateSet3.size() != dateSet2.size() && dateSet2.size() != dateSet1.size() && dateSet1.size() != dateSet3.size()))){
-				break;
-			}
 			line = line.replace("   "," ");
 			line = line.replace("  "," ");
 			line = line.replace("	"," ");
@@ -270,6 +268,9 @@ public class StandAloneValidator implements Runnable{
 					logWindow.println("Unable to determine meter serial number for file: "+dataFile.fileName+"\r\nNo data will be written from this file.");
 				}
 				values.clear();
+				break;
+			}
+			if ((rowCounter%1440==0 && (!dateSet1.isEmpty() && !dateSet2.isEmpty() && !dateSet3.isEmpty()) && (dateSet3.size() != dateSet2.size() && dateSet2.size() != dateSet1.size() && dateSet1.size() != dateSet3.size()))){
 				break;
 			}
 		}
