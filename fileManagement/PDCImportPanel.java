@@ -36,6 +36,8 @@ public class PDCImportPanel extends JPanel implements ActionListener{
 	JButton fileSelectButton = new JButton("Select/Add files...");
 	JCheckBox toFileCheckBox = new JCheckBox("Output To File");
 	JCheckBox toDatabaseCheckBox = new JCheckBox("Output To Database");
+	JCheckBox validateWChNames = new JCheckBox("Valid W Ch Names");
+	
 	//Button Panel Components
 	JPanel nextButtonPanel = new JPanel();
 	JButton removeButton = new JButton("Remove Selected Files");
@@ -66,9 +68,8 @@ public class PDCImportPanel extends JPanel implements ActionListener{
 		fileButtonPanel.add(fileSelectButton);
 		fileButtonPanel.add(toFileCheckBox);
 		fileButtonPanel.add(toDatabaseCheckBox);
+		fileButtonPanel.add(validateWChNames);
 		fileSelectButton.addActionListener(this);
-		toFileCheckBox.addActionListener(this);
-		toDatabaseCheckBox.addActionListener(this);
 		fileSelectField.setEnabled(true);
 		fileSelectField.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		fileSelectField.setModel(fileListModel);
@@ -128,7 +129,7 @@ public class PDCImportPanel extends JPanel implements ActionListener{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			Thread processThread = new Thread(new PDCValidator(fileList,mySQLConnection,new LogWindow("PDC File Processing Log"),toFileCheckBox.isSelected(),toDatabaseCheckBox.isSelected(),true,false));
+			Thread processThread = new Thread(new PDCValidator(fileList,mySQLConnection,new LogWindow("PDC File Processing Log"),toFileCheckBox.isSelected(),toDatabaseCheckBox.isSelected(),true,false,validateWChNames.isSelected()));
 			processThread.start();
 		}
 	}

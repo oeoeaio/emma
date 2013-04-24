@@ -50,7 +50,7 @@ public class IssueTable extends JTable{
 		public void run(){
 			try {
 				issueList.clear();
-				ResultSet issueRS = IssueTable.this.dbConn.createStatement().executeQuery("SELECT issues.issue_id,UNIX_TIMESTAMP(issues.start_date) AS start_date,UNIX_TIMESTAMP(issues.end_date) AS end_date,issues.site_id,sites.site_name,issues.source_id,sources.source_name,issues.issue_type,issues.urgency,issues.notes FROM issues LEFT JOIN sites ON sites.site_id = issues.site_id LEFT JOIN sources ON sources.source_id = issues.source_id ORDER BY end_date DESC");
+				ResultSet issueRS = IssueTable.this.dbConn.createStatement().executeQuery("SELECT issues.issue_id,UNIX_TIMESTAMP(issues.start_date) AS start_date,UNIX_TIMESTAMP(issues.end_date) AS end_date,issues.site_id,sites.site_name,issues.source_id,sources.source_name,issues.issue_type,issues.urgency,issues.notes FROM issues LEFT JOIN sites ON sites.site_id = issues.site_id LEFT JOIN sources ON sources.source_id = issues.source_id ORDER BY end_date DESC LIMIT 20");
 				if (issueRS.next()){
 					issueRS.beforeFirst(); //reset cursor position
 					while (issueRS.next()){

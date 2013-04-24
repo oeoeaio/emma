@@ -99,7 +99,7 @@ public class FileFetcher {
 				//SEND FILES TO VALIDATOR
 				SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd-HHmmss");
 				String now = dateFormatter.format(new Date().getTime());
-				PDCValidator pdcValidator = new PDCValidator(fileList,mySQLConnection,new LogWindow(new File("./PDCWriteLogs/"+folderToProcess.getName()+"-"+now+".txt")),false,true,false,needMiniClampFix);
+				PDCValidator pdcValidator = new PDCValidator(fileList,mySQLConnection,new LogWindow(new File("./PDCWriteLogs/"+folderToProcess.getName()+"-"+now+".txt")),false,true,false,needMiniClampFix,true);
 				new Thread(pdcValidator).start();
 			}
 			else{

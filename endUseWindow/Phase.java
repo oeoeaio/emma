@@ -23,7 +23,7 @@ public class Phase extends Source{
 	public boolean isValid(){
 		boolean isValid = false;
 		if (sourceID.matches("^\\d{1,10}$")){
-			if (sourceName.matches("[\\w\\s\\?\\(\\)/]{1,16}$")){
+			if (sourceName.matches("[\\w\\s\\?\\(\\)/]{1,20}$")){
 				if (notes.matches("^[\\w\\s]{0,255}$") || notes.equals("")){
 					isValid = true;
 				}

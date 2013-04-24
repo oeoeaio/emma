@@ -36,7 +36,7 @@ public class Circuit extends Source{
 	public boolean isValid(){
 		boolean isValid = false;
 		if (sourceID.matches("^\\d{1,10}$") || sourceID.equals("")){
-			if (sourceName.matches("^[\\w\\s\\-\\+\\&\\?\\(\\)/]{1,16}$")){
+			if (sourceName.matches("^[\\w\\s\\-\\+\\&\\?\\(\\)/]{1,20}$")){
 				isValid = true;
 			}
 			else{

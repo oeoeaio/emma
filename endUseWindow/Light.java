@@ -42,7 +42,7 @@ public class Light extends Source{
 	public boolean isValid(){
 		boolean isValid = false;
 		if (sourceID.matches("^\\d{1,10}$")){
-			if (sourceName.matches("^[\\w\\s\\-\\(\\)/]{0,16}$")){
+			if (sourceName.matches("^[\\w\\s\\-\\(\\)/]{0,20}$")){
 				if (circuitID.matches("^\\d{1,10}$") || circuitID.equals("")){
 					if (roomID.matches("^\\d{1,10}$") || roomID.equals("")){
 						if (wattage.matches("^\\d{1,3}[.]{0,1}\\d{0,1}$") || wattage.equals("")){

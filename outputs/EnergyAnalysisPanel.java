@@ -19,15 +19,12 @@ import java.util.LinkedList;
 import java.util.TimeZone;
 
 import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
@@ -39,7 +36,7 @@ import endUseWindow.Source;
 import endUseWindow.SourceTable;
 
 
-public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionListener,ListSelectionListener {
+public class EnergyAnalysisPanel extends JPanel implements ItemListener,ActionListener,ListSelectionListener {
 	private static final long serialVersionUID = -3989983616744319157L;
 
 	//Main Panel
@@ -70,20 +67,6 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 	private final JButton allSources = new JButton("Select All Sources");
 	private final JButton noSources = new JButton("Select No Sources");
 	
-	//Analysis Type
-	private final JPanel analysisTypePanel = new JPanel(new FlowLayout());
-	private final JLabel analysisTypeL = new JLabel("Analysis Type");
-	//private final JComboBox<String> analysisTypeS = new JComboBox<String>(new String[] {"Average","Average+Count","Average+Count+StdDev","Light On-Time","Circuit Known"});
-	private final JRadioButton avgAnalysis = new JRadioButton("Average");
-	private final JRadioButton sumAnalysis = new JRadioButton("Light On-Time");
-	private final JRadioButton circuitKnownAnalysis = new JRadioButton("Circuit Known");
-	
-	//Check Box Panel
-	private final JPanel checkBoxPanel = new JPanel(new FlowLayout());
-	//private final JLabel dataCountL = new JLabel("Sample Period");
-	private final JCheckBox dataCountBox = new JCheckBox("Do Data Count?", false);
-	private final JCheckBox stdDevBox = new JCheckBox("Do StdDev Analysis?", false);
-	
 	//SamplePeriodPanel
 	private final JPanel samplePeriodPanel = new JPanel(new FlowLayout());
 	private final JLabel samplePeriodL = new JLabel("Sample Period");
@@ -108,7 +91,7 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 	
 	private final ArrayList<Long> dateRange = new ArrayList<Long>();
 	
-	public AverageAnalysisPanel(final Connection dbConn){
+	public EnergyAnalysisPanel(final Connection dbConn){
 		dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		sqlDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		this.dbConn = dbConn;
@@ -129,8 +112,6 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 		
 		mainPanel.add(sourceSelectPanel);
 		mainPanel.add(buttonPanel);
-		mainPanel.add(analysisTypePanel);
-		mainPanel.add(checkBoxPanel);
 		mainPanel.add(samplePeriodPanel);
 		mainPanel.add(datePanel);
 		mainPanel.add(startPanel);
@@ -154,28 +135,10 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 		buttonPanel.add(noSources);
 		allSources.addActionListener(this);
 		noSources.addActionListener(this);
-
-		analysisTypePanel.add(analysisTypeL);
-		analysisTypePanel.add(avgAnalysis);
-		analysisTypePanel.add(sumAnalysis);
-		analysisTypePanel.add(circuitKnownAnalysis);
 		
-		ButtonGroup analysisTypeGroup = new ButtonGroup();
-		analysisTypeGroup.add(avgAnalysis);
-		analysisTypeGroup.add(sumAnalysis);
-		analysisTypeGroup.add(circuitKnownAnalysis);
-		avgAnalysis.setSelected(true);
-		avgAnalysis.addActionListener(this);
-		sumAnalysis.addActionListener(this);
-		circuitKnownAnalysis.addActionListener(this);
-		
-		checkBoxPanel.add(dataCountBox);
-		checkBoxPanel.add(stdDevBox);
-				
 		samplePeriodPanel.add(samplePeriodL);
 		samplePeriodPanel.add(samplePeriodS);
 		
-		//samplePeriodS.addItem("1");
 		samplePeriodS.addItem("Ten Minutely");
 		samplePeriodS.addItem("Half Hourly");
 		samplePeriodS.addItem("Hourly");
@@ -316,10 +279,8 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 			}
 			
 			long startDate = dateRange.get(startDateS.getSelectedIndex());
-			long endDate = dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()+1);
+			long endDate = dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()+1);			
 			String samplePeriod = samplePeriodS.getSelectedItem().toString();
-			String analysisType = (avgAnalysis.isSelected()?"avg":(sumAnalysis.isSelected()?"lightSum":"circuitKnown"));
-			
 			
 			LinkedList<long[]> customStartAndEndDates = new LinkedList<long[]>();
 			LinkedList<Integer> frequencies = new LinkedList<Integer>();
@@ -349,11 +310,11 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 									//errorMsg += "<tr><td>"+sqlDateFormatter.format(getFrequenciesResults.getLong("start_date")*1000)+"</td><td>&nbsp;&nbsp;&nbsp;</td><td>"+getFrequenciesResults.getInt("frequency")+"</td></tr>";
 									long newDate = getFrequenciesResults.getLong("start_date")*1000;
 									customStartAndEndDates.set(i, new long[] {previousDate,newDate-(1000*getFrequenciesResults.getInt("frequency"))});
-									frequencies.add(i,previousFreq);
+									frequencies.set(i,previousFreq);
 									previousFreq = getFrequenciesResults.getInt("frequency");
 									previousDate = newDate;
 									
-									//move to new source
+									//create a new source
 									i++;
 									customStartAndEndDates.add(i,new long[] {previousDate,endDate});
 									frequencies.add(i,previousFreq);
@@ -362,25 +323,19 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 							//errorMsg += "</table></html>";
 							//throw new Exception(errorMsg);
 						}
+						else{
+							frequencies.set(i,getFrequenciesResults.getInt("frequency"));
+						}
 					}
 					else{
 						throw new SourceException("Error: no relevant data found for source: "+sourceList.get(i).getSourceName()+"(id: "+sourceList.get(i).getSourceID()+")");
 					}
 				}
 				
-				//checks for circuit known analysis
-				if (circuitKnownAnalysis.isSelected()){
-					for (int i=0;i<selectedRows.length;i++){
-						if (!sourceTable.getValueAt(selectedRows[i],2).equals("Circuit")){
-							throw new SourceException("Selected source '"+sourceList.get(i).getSourceName()+"' is not a circuit.\r\nOnly circuits may be selected for 'Circuit Known' analyses.");
-						}
-					}
-				}
-				
 				if (sourceList.size() > 0){
 					//System.out.println(sqlDateFormatter.format(startDate)+" "+sqlDateFormatter.format(endDate));
-					Thread averageAnalysisProcess = new Thread(new AverageAnalysis(new LogWindow("Average analysis process log"),dbConn,sourceList,customStartAndEndDates,frequencies,siteSelectionType.getSelectedItem().equals("All"),startDate,endDate,samplePeriod,analysisType,dataCountBox.isSelected(),stdDevBox.isSelected()));
-					averageAnalysisProcess.start();
+					Thread dailyEnergyAnalysisProcess = new Thread(new EnergyAnalysis(new LogWindow("Daily Energy Analysis process log"),dbConn,sourceList,customStartAndEndDates,frequencies,samplePeriod,siteSelectionType.getSelectedItem().equals("All"),startDate,endDate));
+					dailyEnergyAnalysisProcess.start();
 				}
 				else{
 					JOptionPane.showMessageDialog(this, "No sources selected for processing.\r\nPlease ensure at least one source is selected.", "No Channels Selected", JOptionPane.WARNING_MESSAGE);
@@ -397,17 +352,6 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 		}
 		else if (aE.getSource().equals(noSources)){
 			sourceTable.clearSelection();
-		}
-		else if (aE.getSource().equals(circuitKnownAnalysis)){
-			stdDevBox.setSelected(false);
-			stdDevBox.setEnabled(false);
-		}
-		else if (aE.getSource().equals(sumAnalysis)){
-			stdDevBox.setSelected(false);
-			stdDevBox.setEnabled(false);
-		}
-		else if (aE.getSource().equals(avgAnalysis)){
-			stdDevBox.setEnabled(true);
 		}
 	}
 

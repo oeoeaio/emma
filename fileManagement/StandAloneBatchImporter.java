@@ -19,13 +19,18 @@ import javax.swing.JOptionPane;
 
 import endUseWindow.Appliance;
 import endUseWindow.Circuit;
+import endUseWindow.Gas;
+import endUseWindow.Humidity;
 import endUseWindow.Light;
 import endUseWindow.LogWindow;
+import endUseWindow.Motion;
 import endUseWindow.MySQLConnection;
+import endUseWindow.Phase;
 import endUseWindow.Room;
 import endUseWindow.Site;
 import endUseWindow.Source;
 import endUseWindow.Temperature;
+import endUseWindow.Water;
 
 public class StandAloneBatchImporter implements Runnable{
 	
@@ -153,7 +158,7 @@ public class StandAloneBatchImporter implements Runnable{
 						}
 
 						//process source info for current record
-						if (existingSource==null || existingSourceID==null || !existingSource.getSourceName().equals(testSource.getSourceName())){ //if existing source needs to be updated - a true here does not mean that there is an information conflict, it merely serves to reduce the number of requests to the MySQL database (one per distinct site and one per distinct source)
+						if (existingSource==null || existingSourceID==null || !existingSource.getSourceName().equals(testSource.getSourceName()) || !existingSource.getSite().equalTo(testSource.getSite())){ //if existing source needs to be updated - a true here does not mean that there is an information conflict, it merely serves to reduce the number of requests to the MySQL database (one per distinct site and one per distinct source)
 
 							String checkSourceSQL = "SELECT * FROM sources WHERE site_id = "+existingSiteID+" AND source_name = '"+testSource.getSourceName()+"'";
 							ResultSet existingSourceInfo = MySQL_Statement.executeQuery(checkSourceSQL);
@@ -210,7 +215,7 @@ public class StandAloneBatchImporter implements Runnable{
 							}
 							else{ //if no record for this source currently exists, add it to the database, and change the existingSource to the new id
 								try{
-									existingSourceID = Source.addSource(MySQL_Statement, existingSiteID, testSource);
+									existingSourceID = Source.addSource(logWindow, true, MySQL_Statement, existingSite, testSource, dataFile.fileName, false);
 									dataFile.sourceID = existingSourceID;
 									dataFile.sourceType = testSource.getSourceType();
 									dataFile.measurementType = testSource.getMeasurementType();
@@ -234,7 +239,8 @@ public class StandAloneBatchImporter implements Runnable{
 											}
 											else{// add new circuit
 												Source testCircuitSource = new Source(existingSite,null,batchInfo.get(i).get("circuit_name"),"Circuit","ActPower");
-												String testCircuitSourceID = Source.addSource(MySQL_Statement, existingSiteID, testCircuitSource);
+												String testCircuitSourceID = Source.addSource(logWindow, true, MySQL_Statement, existingSite, testCircuitSource, dataFile.fileName, false);
+												
 												
 												circuitID = Circuit.addCircuit(MySQL_Statement, logWindow, existingSiteID, testCircuitSourceID);
 											}
@@ -244,204 +250,79 @@ public class StandAloneBatchImporter implements Runnable{
 										logWindow.println("Warning: unable to match specified circuit '"+batchInfo.get(i).get("circuit_name")+"'");
 									}
 									
+									boolean sourceAdded = false;
+									
 									if (testSource.getSourceType().equals("Appliance")){
 										Appliance testAppliance = new Appliance(existingSite,existingSourceID,testSource.getSourceName(),circuitID,roomID,batchInfo.get(i).get("appliance_group"),batchInfo.get(i).get("appliance_type"),batchInfo.get(i).get("brand"),batchInfo.get(i).get("model"),batchInfo.get(i).get("appliance_serial"),"","","","","","","","","","","","","","","","","","","","");
 										if (Appliance.addAppliance(MySQL_Statement, logWindow, existingSiteID, testAppliance)){
-											File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
-											if (newFile.isFile() && newFile.canRead()){	
-												dataFile.fileName = newFile.getName();
-												dataFile.file = newFile;
-												standAloneValidator.addFile(dataFile);	
-											}
-											else{ logWindow.println("ERROR: '"+newFile.getName()+"' is not a valid file name or is not a readable file. Record will be ignored."); }
+											sourceAdded = true;
+										}
+									}
+									else if(testSource.getSourceType().equals("Circuit")){
+										if (Circuit.addCircuit(MySQL_Statement, logWindow, existingSiteID, existingSourceID).matches("^\\d{1,10}$")){ //returns a valid circuitID
+											sourceAdded = true;
+										}
+									}
+									else if(testSource.getSourceType().equals("Gas")){
+										Gas testGas = new Gas(existingSite,existingSourceID,testSource.getSourceName(),"");
+										if (Gas.addGas(MySQL_Statement, logWindow, existingSiteID, testGas)){
+											sourceAdded = true;
+										}
+									}
+									else if(testSource.getSourceType().equals("Humidity")){
+										Humidity testHumidity = new Humidity(existingSite,existingSourceID,testSource.getSourceName(),"","");
+										if (Humidity.addHumidity(MySQL_Statement, logWindow, existingSiteID, testHumidity)){
+											sourceAdded = true;
+										}
+									}
+									else if(testSource.getSourceType().equals("Motion")){
+										Motion testMotion = new Motion(existingSite,existingSourceID,testSource.getSourceName(),"","");
+										if (Motion.addMotion(MySQL_Statement, logWindow, existingSiteID, testMotion)){
+											sourceAdded = true;
+										}
+									}
+									else if(testSource.getSourceType().equals("Phase")){
+										Phase testPhase = new Phase(existingSite,existingSourceID,testSource.getSourceName(),"");
+										if (Phase.addPhase(MySQL_Statement, logWindow, existingSiteID, testPhase)){ //returns a valid circuitID
+											sourceAdded = true;
 										}
 									}
 									else if(testSource.getSourceType().equals("Light")){
 										Light testLight = new Light(existingSite,existingSourceID,testSource.getSourceName(),circuitID,roomID,batchInfo.get(i).get("wattage"),null);
 										if (Light.addLight(MySQL_Statement, logWindow, existingSiteID, testLight)){
-											File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
-											if (newFile.isFile() && newFile.canRead()){	
-												dataFile.fileName = newFile.getName();
-												dataFile.file = newFile;
-												standAloneValidator.addFile(dataFile);	
-											}
-											else{ logWindow.println("ERROR: '"+newFile.getName()+"' is not a valid file name or is not a readable file. Record will be ignored."); }
+											sourceAdded = true;
 										}
 									}
 									else if(testSource.getSourceType().equals("Temperature")){
 										Temperature testTemperature = new Temperature(existingSite,existingSourceID,testSource.getSourceName(),roomID,null);
 										if (Temperature.addTemperature(MySQL_Statement, logWindow, existingSiteID, testTemperature)){
-											File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
-											if (newFile.isFile() && newFile.canRead()){	
-												dataFile.fileName = newFile.getName();
-												dataFile.file = newFile;
-												standAloneValidator.addFile(dataFile);	
-											}
-											else{ logWindow.println("ERROR: '"+newFile.getName()+"' is not a valid file name or is not a readable file. Record will be ignored."); }
+											sourceAdded = true;
 										}
+									}
+									else if(testSource.getSourceType().equals("Water")){
+										Water testWater = new Water(existingSite,existingSourceID,testSource.getSourceName(),"");
+										if (Water.addWater(MySQL_Statement, logWindow, existingSiteID, testWater)){
+											sourceAdded = true;
+										}
+									}
+									
+									if (sourceAdded){
+										File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
+										if (newFile.isFile() && newFile.canRead()){	
+											dataFile.fileName = newFile.getName();
+											dataFile.file = newFile;
+											standAloneValidator.addFile(dataFile);	
+										}
+										else{ logWindow.println("ERROR: '"+newFile.getName()+"' is not a valid file name or is not a readable file. Record will be ignored."); }
+									}
+									else{
+										Source.removeSource(MySQL_Statement, existingSiteID, existingSourceID);
 									}
 									
 								}catch(SQLException sE){
 									JOptionPane.showMessageDialog(null,"Error occured while adding a new source: '"+testSource.getSourceName()+"' for file '"+batchInfo.get(i).data[8]+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);
 									logWindow.println("Error occured while adding a new source: '"+testSource.getSourceName()+"' for file '"+batchInfo.get(i).data[8]+"'.\r\nSource will not be added at this point. File will be ignored.\r\n");
 								}
-								
-								
-								
-								/*
-								
-								
-								try{
-									String addSourceSQL = "INSERT INTO sources (site_id,source_name,source_type,measurement_type) VALUES("+existingSiteID+","+(testSource.getSourceName().equals("")?"NULL":"'"+testSource.getSourceName()+"'")+","+(testSource.getSourceType().equals("")?"NULL":"'"+testSource.getSourceType()+"'")+","+(testSource.getMeasurementType().equals("")?"NULL":"'"+testSource.getMeasurementType()+"'")+")";
-									MySQL_Statement.executeUpdate(addSourceSQL);
-									ResultSet new_source_id = MySQL_Statement.executeQuery("SELECT LAST_INSERT_ID() AS current_id"); //returns new id
-									new_source_id.next();
-									existingSourceID = new_source_id.getString("current_id");
-									existingSource = testSource;
-									logWindow.println("Adding new source ID "+existingSourceID+" at site "+existingSiteID);
-
-									String roomID = "";
-									if (batchInfo.get(i).get("room_number").matches("^\\d{1,2}$")){
-										try{
-											ResultSet roomIDRS = MySQL_Statement.executeQuery("SELECT room_id FROM rooms WHERE site_id = "+existingSiteID+" AND room_number = "+batchInfo.get(i).get("room_number"));
-											if (roomIDRS.next()){
-												roomID = roomIDRS.getString("room_id");
-											}
-											else{// add new circuit
-												if (Arrays.asList(Room.getRoomTypes()).contains(batchInfo.get(i).get("room_type"))){ //check valid room type
-													logWindow.printString("Warning: unable to match specified room '"+batchInfo.get(i).get("room_number")+"'.\r\nAdding room of type '"+batchInfo.get(i).get("room_type")+"' to database...");
-													try{
-														MySQL_Statement.executeUpdate("INSERT INTO rooms (site_id,room_number,room_type) VALUES("+existingSiteID+","+batchInfo.get(i).get("room_number")+",'"+batchInfo.get(i).get("room_type")+"')");
-														ResultSet new_room_id = MySQL_Statement.executeQuery("SELECT LAST_INSERT_ID() AS current_id"); //returns new id
-														new_room_id.next();
-														roomID = new_room_id.getString("current_id");
-														logWindow.println("Done.");
-													} catch(SQLException sE){
-														//error here means should remove source
-														sE.printStackTrace();
-														logWindow.println("Failed.");
-													}
-												}
-												else{
-													logWindow.printString("Warning: unable to match specified room '"+batchInfo.get(i).get("room_number")+"'.");
-												}
-											}
-										} catch(SQLException sE){
-											//non fatal, so allow to continue
-											logWindow.println("Warning: unable to match specified room '"+batchInfo.get(i).get("room_number")+"'");
-										}
-									}
-
-									String circuitID = "";
-									if (batchInfo.get(i).get("circuit_name").length()>0){
-										try{
-											ResultSet circuitIDRS = MySQL_Statement.executeQuery("SELECT circuit_id FROM circuits LEFT JOIN sources ON circuits.source_id = sources.source_id WHERE circuits.site_id = "+existingSiteID+" AND sources.source_name = '"+batchInfo.get(i).get("circuit_name")+"'");
-											if (circuitIDRS.next()){
-												circuitID = circuitIDRS.getString("circuit_id");
-											}
-											else{// add new circuit
-												logWindow.printString("Warning: unable to match specified circuit '"+batchInfo.get(i).get("circuit_name")+"'.\r\nAdding circuit '"+batchInfo.get(i).get("circuit_name")+"' to database...");
-												String addCircuitSourceSQL = "INSERT INTO sources (site_id,source_name,source_type,measurement_type) VALUES("+existingSiteID+",'"+batchInfo.get(i).get("circuit_name")+"','Circuit','ActPower')";
-												MySQL_Statement.executeUpdate(addCircuitSourceSQL);
-												ResultSet new_circuit_source_id = MySQL_Statement.executeQuery("SELECT LAST_INSERT_ID() AS current_id"); //returns new id
-												new_circuit_source_id.next();
-												String circuitSourceID = new_circuit_source_id.getString("current_id");
-												try{
-													MySQL_Statement.executeUpdate("INSERT INTO circuits (site_id,source_id) VALUES("+existingSiteID+",'"+circuitSourceID+"')");
-													ResultSet new_circuit_id = MySQL_Statement.executeQuery("SELECT LAST_INSERT_ID() AS current_id"); //returns new id
-													new_circuit_id.next();
-													circuitID = new_circuit_id.getString("current_id");
-													logWindow.println("Done.");
-												} catch(SQLException sE){
-													//error here means should remove source
-													sE.printStackTrace();
-													logWindow.println("Failed.");
-												}
-
-											}
-										} catch(SQLException sE){
-											//non fatal, so allow to continue
-											logWindow.println("Warning: unable to match specified circuit '"+batchInfo.get(i).get("circuit_name")+"'");
-										}
-									}
-
-									if (testSource.getSourceType().equals("Appliance")){
-										Appliance testAppliance = new Appliance(existingSourceID,testSource.getSourceName(),circuitID,roomID,batchInfo.get(i).get("appliance_group"),batchInfo.get(i).get("appliance_type"),batchInfo.get(i).get("brand"),batchInfo.get(i).get("model"),batchInfo.get(i).get("appliance_serial"),"","","","","","","","","","","","","","","","","","","","");
-										if (testAppliance.isValid()){
-											try{
-												String updApplianceSQL = "INSERT INTO appliances (site_id,source_id,circuit_id,room_id,appliance_group,appliance_type,brand,model,serial_no) VALUES("+existingSiteID+","+testAppliance.getSourceID()+","+(testAppliance.getCircuitID().equals("")?"NULL":testAppliance.getCircuitID())+","+(testAppliance.getRoomID().equals("")?"NULL":testAppliance.getRoomID())+","+(testAppliance.getApplianceGroup().equals("")?"NULL":"'"+testAppliance.getApplianceGroup()+"'")+","+(testAppliance.getApplianceType().equals("")?"NULL":"'"+testAppliance.getApplianceType()+"'")+","+(testAppliance.getBrand().equals("")?"NULL":"'"+testAppliance.getBrand()+"'")+","+(testAppliance.getModel().equals("")?"NULL":"'"+testAppliance.getModel()+"'")+","+(testAppliance.getSerial().equals("")?"NULL":"'"+testAppliance.getSerial()+"'")+")"; //adds specified information into the database
-												MySQL_Statement.executeUpdate(updApplianceSQL);
-
-												File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
-												if (newFile.isFile() && newFile.canRead()){	fileList.peek().add(newFile);	}
-												else{ logWindow.println("ERROR: '"+newFile.getName()+"' is not a valid file name or is not a readable file. Record will be ignored."); }
-
-											}catch(SQLException sE){
-												removeSource(existingSiteID,existingSourceID);
-												sE.printStackTrace();
-												logWindow.println("Error occured when writing appliance information.");
-												throw new SQLException();
-											}
-										}
-										else{
-											removeSource(existingSiteID,existingSourceID);
-											logWindow.println("Error occured when writing appliance information.");
-											throw new SQLException();
-										}
-									}
-									else if (testSource.getSourceType().equals("Light")){
-										Light testLight = new Light(existingSourceID,testSource.getSourceName(),circuitID,roomID,batchInfo.get(i).get("wattage"),null);
-										if (testLight.isValid()){
-											try{
-												String updLightSQL = "INSERT INTO lights (site_id,source_id,circuit_id,room_id,wattage) VALUES("+existingSiteID+","+testLight.getSourceID()+","+(testLight.getCircuitID().equals("")?"NULL":testLight.getCircuitID())+","+(testLight.getRoomID().equals("")?"NULL":testLight.getRoomID())+","+(testLight.getWattage().equals("")?"NULL":testLight.getWattage())+")"; //adds specified information into the database
-												MySQL_Statement.executeUpdate(updLightSQL);
-
-												File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
-												if (newFile.isFile() && newFile.canRead()){	fileList.peek().add(newFile);	}
-												else{ logWindow.println("ERROR: '"+newFile.getName()+"' is not a valid file name or is not a readable file. Record will be ignored."); }
-
-											}catch(SQLException sE){
-												removeSource(existingSiteID,existingSourceID);
-												sE.printStackTrace();
-												logWindow.println("Error occured when writing light information.");
-												throw new SQLException();
-											}
-										}
-										else{
-											removeSource(existingSiteID,existingSourceID);
-											logWindow.println("Error occured when writing light information.");
-											throw new SQLException();
-										}
-									} else if (testSource.getSourceType().equals("Temperature")){
-										Temperature testTemperature = new Temperature(existingSourceID,testSource.getSourceName(),roomID,null);
-										if (testTemperature.isValid()){
-											try{
-												String updTemperatureSQL = "INSERT INTO temperatures (site_id,source_id,room_id,notes) VALUES("+existingSiteID+","+testTemperature.getSourceID()+","+(testTemperature.getRoomID().equals("")?"NULL":testTemperature.getRoomID())+","+(testTemperature.getNotes().equals("")?"NULL":"'"+testTemperature.getNotes()+"'")+")"; //adds specified information into the database
-												MySQL_Statement.executeUpdate(updTemperatureSQL);
-
-												File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
-												if (newFile.isFile() && newFile.canRead()){	fileList.peek().add(newFile);	}
-												else{ logWindow.println("ERROR: '"+newFile.getName()+"' is not a valid file name or is not a readable file. Record will be ignored."); }
-											}catch(SQLException sE){
-												removeSource(existingSiteID,existingSourceID);
-												sE.printStackTrace();
-												logWindow.println("Error occured when writing temperature information.");
-												throw new SQLException();
-											}
-										}
-										else{
-											removeSource(existingSiteID,existingSourceID);
-											logWindow.println("Error occured when writing temperature information.");
-											throw new SQLException();
-										}
-									}
-
-								}catch(SQLException sE){
-									JOptionPane.showMessageDialog(null,"Error occured while adding a new source: '"+testSource.getSourceName()+"' for file '"+batchInfo.get(i).data[8]+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);
-									logWindow.println("Error occured while adding a new source: '"+testSource.getSourceName()+"' for file '"+batchInfo.get(i).data[8]+"'.\r\nSource will not be added at this point. File will be ignored.\r\n");
-								}*/
-
-
 							}
 							existingSourceInfo.close();
 						}

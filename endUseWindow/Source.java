@@ -36,7 +36,7 @@ public class Source {
 	
 	public boolean isValid(){
 		boolean isValid = false;
-		if (sourceName.matches("^[\\w\\s\\-\\+\\&\\(\\)/]{1,16}$")){
+		if (sourceName.matches("^[\\w\\s\\-\\+\\&\\(\\)/]{1,20}$")){
 			if (Arrays.asList(getSourceTypeList()).contains(sourceType)){
 				if (Arrays.asList(getMeasurementList()).contains(measurementType)){
 					isValid = true;
@@ -56,16 +56,85 @@ public class Source {
 		return isValid;
 	}
 	
-	public static String addSource(Statement MySQL_Statement,String siteID,Source source) throws SQLException{
+	public static String addSource(LogWindow logWindow, boolean showGUI,Statement MySQL_Statement,Site site,Source source,String fileName,boolean addSourceRecord) throws SQLException{
 		String newSourceID = null;
-		String addSourceSQL = "INSERT INTO sources (site_id,source_name,source_type,measurement_type) VALUES("+siteID+","+(source.sourceName.equals("")?"NULL":"'"+source.sourceName+"'")+","+(source.sourceType.equals("")?"NULL":"'"+source.sourceType+"'")+","+(source.measurementType.equals("")?"NULL":"'"+source.measurementType+"'")+")";
+		String addSourceSQL = "INSERT INTO sources (site_id,source_name,source_type,measurement_type) VALUES("+site.siteID+","+(source.sourceName.equals("")?"NULL":"'"+source.sourceName+"'")+","+(source.sourceType.equals("")?"NULL":"'"+source.sourceType+"'")+","+(source.measurementType.equals("")?"NULL":"'"+source.measurementType+"'")+")";
+		System.out.println(addSourceSQL);
 		MySQL_Statement.executeUpdate(addSourceSQL);
 		ResultSet new_source_id = MySQL_Statement.executeQuery("SELECT LAST_INSERT_ID() AS current_id"); //returns new id
 		new_source_id.next();
 		newSourceID = new_source_id.getString("current_id");
-		//existingSource = testSource;
+		//existingSource = source;
+		String sourceID = null;
+		
+		if (addSourceRecord){
+			if (source.getSourceType().equals("Appliance")){
+				Appliance testAppliance = new Appliance(site,newSourceID,source.getSourceName(),"","","","","","","","","","","","","","","","","","","","","","","","","","","");
+				if (Appliance.addAppliance(MySQL_Statement, logWindow, site.siteID, testAppliance)){
+					sourceID = newSourceID;
+				}
+			}
+			else if(source.getSourceType().equals("Circuit")){
+				if (Circuit.addCircuit(MySQL_Statement, logWindow, site.siteID, newSourceID).matches("^\\d{1,10}$")){ //returns a valid circuitID
+					sourceID = newSourceID;
+				}
+			}
+			else if(source.getSourceType().equals("Gas")){
+				Gas testGas = new Gas(site,newSourceID,source.getSourceName(),"");
+				if (Gas.addGas(MySQL_Statement, logWindow, site.siteID, testGas)){
+					sourceID = newSourceID;
+				}
+			}
+			else if(source.getSourceType().equals("Humidity")){
+				Humidity testHumidity = new Humidity(site,newSourceID,source.getSourceName(),"","");
+				if (Humidity.addHumidity(MySQL_Statement, logWindow, site.siteID, testHumidity)){
+					sourceID = newSourceID;
+				}
+			}
+			else if(source.getSourceType().equals("Light")){
+				Light testLight = new Light(site,newSourceID,source.getSourceName(),"","","","");
+				if (Light.addLight(MySQL_Statement, logWindow, site.siteID, testLight)){
+					sourceID = newSourceID;
+				}
+			}
+			else if(source.getSourceType().equals("Motion")){
+				Motion testMotion = new Motion(site,newSourceID,source.getSourceName(),"","");
+				if (Motion.addMotion(MySQL_Statement, logWindow, site.siteID, testMotion)){
+					sourceID = newSourceID;
+				}
+			}
+			else if(source.getSourceType().equals("Phase")){
+				Phase testPhase = new Phase(site,newSourceID,source.sourceName,"");
+				if (Phase.addPhase(MySQL_Statement, logWindow, site.siteID, testPhase)){ //returns a valid circuitID
+					sourceID = newSourceID;
+				}
+			}
+			else if(source.getSourceType().equals("Temperature")){
+				Temperature testTemperature = new Temperature(site,newSourceID,source.getSourceName(),"","");
+				if (Temperature.addTemperature(MySQL_Statement, logWindow, site.siteID, testTemperature)){
+					sourceID = newSourceID;
+				}
+			}
+			else if(source.getSourceType().equals("Water")){
+				Water testWater = new Water(site,newSourceID,source.getSourceName(),"");
+				if (Water.addWater(MySQL_Statement, logWindow, site.siteID, testWater)){
+					sourceID = newSourceID;
+				}
+			}
+			else{
+				if (showGUI){JOptionPane.showMessageDialog(null,"Error: Unrecognised source type: '"+source.getSourceType()+"' for source '"+source.sourceName+"' in file '"+fileName+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);}
+				logWindow.println("Error: Unrecognised source type: '"+source.getSourceType()+"' for source '"+source.sourceName+"' in file '"+fileName+"'.\r\nSource will not be added at this point. File will be ignored.\r\n");
+			}
+	
+			if (sourceID.equals(newSourceID)==false){
+				Source.removeSource(MySQL_Statement, site.siteID, newSourceID);
+			}
+		}
+		else{
+			sourceID = newSourceID;
+		}
 
-		return newSourceID;
+		return sourceID;
 	}
 	
 	public static void removeSource(Statement MySQL_Statement,String siteID,String sourceID){

@@ -86,7 +86,7 @@ public class Appliance extends Source{
 	public boolean isValid(){
 		boolean isValid = false;
 		if (sourceID.matches("^\\d{1,10}$")){
-			if (sourceName.matches("^[\\w\\s\\-\\(\\)/]{0,16}$")){
+			if (sourceName.matches("^[\\w\\s\\-\\(\\)/]{0,20}$")){
 				if (circuitID.matches("^\\d{1,10}$") || circuitID.equals("")){
 					if (roomID.matches("^\\d{1,10}$") || roomID.equals("")){
 						if (applianceGroup.equals("") || Arrays.asList(getApplianceGroups()).contains(applianceGroup)){

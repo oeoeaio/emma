@@ -18,7 +18,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.WindowConstants;
 
@@ -31,6 +30,7 @@ import fileManagement.StandAloneImportPanel;
 
 
 import outputs.AverageAnalysisPanel;
+import outputs.EnergyAnalysisPanel;
 import outputs.DiscreteModeAnalysisPanel;
 import outputs.RawDataExportPanel;
 import outputs.RefrigAnalysisPanel;
@@ -74,6 +74,7 @@ public class EndUseWindow extends JFrame implements ActionListener{
 	JMenu standardOutputsMenu = new JMenu("Standard Outputs");
 	JMenuItem rawDataExport = new JMenuItem("Export Raw Data");
 	JMenuItem avgAnalysis = new JMenuItem("Average/Sum Analysis");
+	JMenuItem energyAnalysis = new JMenuItem("Energy Analysis");
 	JMenuItem discreteModeAvg = new JMenuItem("Discrete Mode Analysis");
 	JMenuItem TODAnalysis = new JMenuItem("Time Of Day Analysis");
 	
@@ -88,14 +89,14 @@ public class EndUseWindow extends JFrame implements ActionListener{
 	Connection dbConn = null;
 
 	public static void main(String[] args) {
-		try {
-		    for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-		        if ("Nimbus".equals(info.getName())) {
-		            UIManager.setLookAndFeel(info.getClassName());
-		            break;
-		        }
-		    }
-		} catch (Exception e) {
+		//try {
+		//    for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+		//        if ("Nimbus".equals(info.getName())) {
+		//            UIManager.setLookAndFeel(info.getClassName());
+		//            break;
+		//        }
+		//    }
+		//} catch (Exception e) {
 		    // If Nimbus is not available, you can set the GUI to another look and feel.
 			
 			// Get the native look and feel class name
@@ -109,7 +110,7 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			} catch (UnsupportedLookAndFeelException uLAFE) {
 			} catch (IllegalAccessException iAE) {
 			}
-		}
+		//}
 		
 		
 		new EndUseWindow();
@@ -178,10 +179,12 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			outputMenu.add(standardOutputsMenu);
 			standardOutputsMenu.add(rawDataExport);
 			standardOutputsMenu.add(avgAnalysis);
+			standardOutputsMenu.add(energyAnalysis);
 			standardOutputsMenu.add(discreteModeAvg);
 			standardOutputsMenu.add(TODAnalysis);
 			rawDataExport.addActionListener(this);
 			avgAnalysis.addActionListener(this);
+			energyAnalysis.addActionListener(this);
 			discreteModeAvg.addActionListener(this);
 			TODAnalysis.addActionListener(this);
 			
@@ -279,6 +282,14 @@ public class EndUseWindow extends JFrame implements ActionListener{
 		else if (aE.getSource().equals(avgAnalysis)){			
 			JFrame newFrame = new JFrame("Average Analysis");
 			newFrame.getContentPane().add(new AverageAnalysisPanel(dbConn));
+			newFrame.setLocation(200, 200);
+			newFrame.setPreferredSize(new Dimension(600,400));
+			newFrame.pack();
+			newFrame.setVisible(true);
+		}
+		else if (aE.getSource().equals(energyAnalysis)){			
+			JFrame newFrame = new JFrame("Energy Analysis");
+			newFrame.getContentPane().add(new EnergyAnalysisPanel(dbConn));
 			newFrame.setLocation(200, 200);
 			newFrame.setPreferredSize(new Dimension(600,400));
 			newFrame.pack();

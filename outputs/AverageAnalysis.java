@@ -66,7 +66,7 @@ public class AverageAnalysis implements Runnable{
 		Preferences fileSettings = Preferences.userRoot().node("EndUseFileSettings");
 		JFileChooser fileChooser = new JFileChooser();
 		File lastDir = new File(fileSettings.get("LastAvgAnalysisSave", fileChooser.getCurrentDirectory().getAbsolutePath()));
-		String fileName = "./"+(analysisType.equals("avg")?"AvgAnalysis":(analysisType.equals("lightSum")?"LightOnTime":"CircuitKnown"))+"_"+(multipleSites?"MultiSite":"Site"+sourceList.get(0).getSite().getSiteName())+"_"+csvDateFormatter.format(startDate)+"_"+csvDateFormatter.format(endDate)+".csv";
+		String fileName = "./"+(analysisType.equals("avg")?"AvgAnalysis":(analysisType.equals("lightSum")?"LightOnTime":"CircuitKnown"))+"_"+(multipleSites?"MultiSite":"Site"+sourceList.get(0).getSite().getSiteName())+"_"+csvDateFormatter.format(startDate)+"_"+csvDateFormatter.format(endDate)+"-"+samplePeriod+".csv";
 		fileChooser.setCurrentDirectory(lastDir);
 		fileChooser.setSelectedFile(new File(fileName));
 		int fChooserOption = fileChooser.showSaveDialog(fileChooser);
@@ -142,6 +142,7 @@ public class AverageAnalysis implements Runnable{
 				try {					
 					int rowsRequired = 0;
 					if (samplePeriod.equals("Ten Minutely")){rowsRequired = (int)((endDate-startDate)/(1000*60*10));}
+					else if (samplePeriod.equals("Half Hourly")){rowsRequired = (int)((endDate-startDate)/(1000*60*30));}
 					else if (samplePeriod.equals("Hourly")){rowsRequired = (int)((endDate-startDate)/(1000*60*60));}
 					else if (samplePeriod.equals("Daily")){rowsRequired = (int)((endDate-startDate)/(1000*60*1440));}
 					else if (samplePeriod.equals("Monthly")){
@@ -188,6 +189,11 @@ public class AverageAnalysis implements Runnable{
 							rowDates[i] = rollDate.getTimeInMillis();
 							rowDateStrings[i] = sqlDateFormatter.format(rowDates[i]);
 						}
+						else if (samplePeriod == "Half Hourly"){
+							rollDate.add(Calendar.MINUTE, 30);
+							rowDates[i] = rollDate.getTimeInMillis();
+							rowDateStrings[i] = sqlDateFormatter.format(rowDates[i]);
+						}
 						else if (samplePeriod.equals("Hourly")){
 							rollDate.add(Calendar.HOUR_OF_DAY, 1);
 							rowDates[i] = rollDate.getTimeInMillis();
@@ -214,6 +220,10 @@ public class AverageAnalysis implements Runnable{
 					}*/
 					if (samplePeriod == "Ten Minutely"){
 						blockString = "UNIX_TIMESTAMP(CASE WHEN HOUR(date_time)+MINUTE(date_time)/60 > 23+(5/6) THEN DATE(DATE_ADD(date_time,INTERVAL 1 HOUR)) ELSE DATE(date_time) END) AS blockDate_ts,CASE WHEN HOUR(date_time)+MINUTE(date_time)/60 > 23+(5/6) THEN 0 ELSE CASE WHEN MINUTE(date_time) > 50 THEN CEIL(HOUR(date_time)+MINUTE(date_time)/60) ELSE FLOOR(HOUR(date_time)+MINUTE(date_time)/60) END END AS blockHour,CASE WHEN MINUTE(date_time) > 50 THEN 0 ELSE CEIL(MINUTE(date_time)/10)*10 END AS blockMinute";
+						groupByString = "GROUP BY blockDate_ts,blockHour,blockMinute";
+					}
+					else if (samplePeriod == "Half Hourly"){
+						blockString = "UNIX_TIMESTAMP(CASE WHEN HOUR(date_time)+MINUTE(date_time)/60 > 23+(1/2) THEN DATE(DATE_ADD(date_time,INTERVAL 1 HOUR)) ELSE DATE(date_time) END) AS blockDate_ts,CASE WHEN HOUR(date_time)+MINUTE(date_time)/60 > 23+(1/2) THEN 0 ELSE CASE WHEN MINUTE(date_time) > 30 THEN CEIL(HOUR(date_time)+MINUTE(date_time)/60) ELSE FLOOR(HOUR(date_time)+MINUTE(date_time)/60) END END AS blockHour,CASE WHEN MINUTE(date_time) > 30 THEN 0 ELSE CEIL(MINUTE(date_time)/30)*30 END AS blockMinute";
 						groupByString = "GROUP BY blockDate_ts,blockHour,blockMinute";
 					}
 					else if (samplePeriod.equals("Hourly")){
@@ -323,7 +333,7 @@ public class AverageAnalysis implements Runnable{
 									dbDate.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 									dbDate.setTimeInMillis(startDate);
 									while (getDataRS.next()){
-										if (samplePeriod == "Ten Minutely" || samplePeriod == "Minutely"){
+										if (samplePeriod == "Ten Minutely" || samplePeriod == "Half Hourly"){
 											dbDate.setTimeInMillis(getDataRS.getLong("blockDate_ts")*1000);
 											dbDate.add(Calendar.MINUTE,getDataRS.getInt("blockHour")*60+getDataRS.getInt("blockMinute"));
 											while (rowDates[rowCounter]<dbDate.getTimeInMillis()){

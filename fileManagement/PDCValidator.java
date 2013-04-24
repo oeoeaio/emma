@@ -46,6 +46,7 @@ public class PDCValidator implements Runnable{
 	private final boolean writeToDatabase;
 	private final boolean showGUI;
 	private final boolean needMiniClampFix;
+	private final boolean validateWChNames;
 	
 	private ArrayList<FileIssue> fileIssueList = new ArrayList<FileIssue>();
 	private ArrayList<String[]> sourceIssueList = new ArrayList<String[]>();
@@ -88,7 +89,7 @@ public class PDCValidator implements Runnable{
 	//String[] wModTitles = {"SN","Type of Module","Version","Channel Names","Sensor SNs","Sensor Chs","Line","TotalLines"};
 	//String[] dataTitles = {"SN","Current Address","Type of Module","Line Radio"};
 	
-	PDCValidator(ArrayList<File> filesToProcess,MySQLConnection mySQLConnection,LogWindow logWindow,boolean writeToFile,boolean writeToDatabase,boolean showGUI,boolean needMiniClampFix) {
+	PDCValidator(ArrayList<File> filesToProcess,MySQLConnection mySQLConnection,LogWindow logWindow,boolean writeToFile,boolean writeToDatabase,boolean showGUI,boolean needMiniClampFix,boolean validateWChNames) {
 		this.mySQLConnection = mySQLConnection;
 		this.filesToProcess = filesToProcess;
 		if (mySQLConnection != null){
@@ -99,6 +100,7 @@ public class PDCValidator implements Runnable{
 		this.writeToDatabase = writeToDatabase;
 		this.showGUI = showGUI;
 		this.needMiniClampFix = needMiniClampFix;
+		this.validateWChNames = validateWChNames;
 	}
 	
 	@Override
@@ -117,7 +119,7 @@ public class PDCValidator implements Runnable{
 						this.wait();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
-					}
+					}Co
 				}
 			}*/
 			if (fileList.get(i).isFile()){
@@ -165,7 +167,7 @@ public class PDCValidator implements Runnable{
 					feederThread.start();
 					for (int i=0;i<fileList.size();i++){ //cycle through files and write info to database
 						Site site = siteList[i];
-						String siteID = site.getSiteID();
+						String siteID = (site==null?null:site.getSiteID());
 						
 						if(siteID!=null){
 						
@@ -212,17 +214,8 @@ public class PDCValidator implements Runnable{
 													try{
 										
 														Source testSource = new Source(site,null,phNames[j],sourceType,measurementType);
-														String testSourceID = Source.addSource(mySQLStatement, siteID, testSource);
-	
-														Phase testPhase = new Phase(site,testSourceID,phNames[j],"");
-														if (Phase.addPhase(mySQLStatement, logWindow, siteID, testPhase)){ //returns a valid circuitID
-															sourceID = testSourceID;
-														}
-	
-														if (sourceID.equals(testSourceID)==false){
-															Source.removeSource(mySQLStatement, siteID, testSourceID);
-														}
-	
+														sourceID = Source.addSource(logWindow, showGUI, mySQLStatement, site, testSource, fileList.get(i).getName(), true);
+
 													}catch(SQLException sE){
 														sE.printStackTrace();
 														String errorMsg = "DB error occured while adding a new source: "+phNames[j];
@@ -366,16 +359,7 @@ public class PDCValidator implements Runnable{
 													measurementType = "ActPower";
 													try{
 														Source testSource = new Source(site,null,ctNames[j],sourceType,measurementType);
-														String testSourceID = Source.addSource(mySQLStatement, siteID, testSource);
-	
-														if (Circuit.addCircuit(mySQLStatement, logWindow, siteID, testSourceID).matches("^\\d{1,10}$")){ //returns a valid circuitID
-															sourceID = testSourceID;
-														}
-	
-														if (sourceID.equals(testSourceID)==false){
-															Source.removeSource(mySQLStatement, siteID, testSourceID);
-														}
-	
+														sourceID = Source.addSource(logWindow,showGUI,mySQLStatement, site, testSource,fileList.get(i).getName(), true);
 													}catch(SQLException sE){
 														sE.printStackTrace();
 														if (showGUI){JOptionPane.showMessageDialog(null,"Error occured while adding a new source: '"+ctNames[j]+"' for file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);}
@@ -440,7 +424,7 @@ public class PDCValidator implements Runnable{
 											String[] wSensorChParts = ALL_W_MOD_HEADERS.get(i).get(c)[5].split(",");
 											for (int d=0;d<6;d++){
 												String tempWChName = wChNameParts[d];
-												if (tempWChName.equals("[LEFT BLANK]") || tempWChName.matches("^[AGHLMTW][\\w\\s\\-\\(\\)\\/]{1,15}$")==false){ //could be error or legitimately blank or corrupted header
+												if (validateWChNames && (tempWChName.equals("[LEFT BLANK]") || tempWChName.matches("^[AGHLMTW][\\w\\s\\-\\(\\)\\/]{1,15}$")==false)){ //could be error or legitimately blank or corrupted header
 													//search for a legitimate header
 													String headerQuerySQL = "SELECT wl_ch_names FROM header_log WHERE date_time = (SELECT MAX(date_time) FROM header_log WHERE date_time <= '"+dateFormatter.format(ALL_CONC_DATE_DATA.get(i).get(0))+"' AND site_id = "+siteID+") AND site_id = "+siteID;
 													ResultSet lastHeaderRS = mySQLStatement.executeQuery(headerQuerySQL);
@@ -523,7 +507,7 @@ public class PDCValidator implements Runnable{
 														sourceID = fetchSourceIDRS.getString("source_id");
 														sourceType = fetchSourceIDRS.getString("source_type");
 														measurementType = fetchSourceIDRS.getString("measurement_type");
-														if (!sourceType.equals(getSourceType(wChNames[j]))){
+														if (!sourceType.equals(getSourceType(wChNames[j],wSensorChs[j]))){
 															logWindow.println("Warning: Source Type '"+sourceType+"' for source '"+wChNames[j]+"' contradicts naming convention. Site: "+siteID+".");
 														}
 														if (!measurementType.equals(getMeasurementType(wSensorChs[j]))){
@@ -534,48 +518,21 @@ public class PDCValidator implements Runnable{
 													else{
 														logWindow.println("No matching Source ID found for source '"+wChNames[j]+"' at site "+siteID+". Adding now...");
 		
-														sourceType = getSourceType(wChNames[j]);
+														sourceType = getSourceType(wChNames[j],wSensorChs[j]);
 														measurementType = getMeasurementType(wSensorChs[j]);
 		
-														if (!sourceType.equals("") && !measurementType.equals("")){
+														if (sourceType.equals("") && showGUI){
+															String[] sourceTypes = new String[] {"Appliance","Gas","Humidity","Light","Motion","Temperature","Water"};
+															sourceType = (String)JOptionPane.showInputDialog(null, "Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+fileList.get(i).getName()+"'.\r\nPlease select the appropriate type from the list:", "Select Source Type", JOptionPane.PLAIN_MESSAGE, null, sourceTypes, "Appliance");
+															if(sourceType == null){sourceType = "";}
+														}
+														if (!sourceType.equals("") || !measurementType.equals("")){
 																Source testSource = new Source(site,null,wChNames[j],sourceType,measurementType);
-																String testSourceID = Source.addSource(mySQLStatement, siteID, testSource);
-		
-																if (testSource.getSourceType().equals("Appliance")){
-																	Appliance testAppliance = new Appliance(site,testSourceID,testSource.getSourceName(),"","","","","","","","","","","","","","","","","","","","","","","","","","","");
-																	if (Appliance.addAppliance(mySQLStatement, logWindow, siteID, testAppliance)){
-																		sourceID = testSourceID;
-																	}
-																}
-																else if(testSource.getSourceType().equals("Light")){
-																	Light testLight = new Light(site,testSourceID,testSource.getSourceName(),"","","","");
-																	if (Light.addLight(mySQLStatement, logWindow, siteID, testLight)){
-																		sourceID = testSourceID;
-																	}
-																}
-																else if(testSource.getSourceType().equals("Temperature")){
-																	Temperature testTemperature = new Temperature(site,testSourceID,testSource.getSourceName(),"","");
-																	if (Temperature.addTemperature(mySQLStatement, logWindow, siteID, testTemperature)){
-																		sourceID = testSourceID;
-																	}
-																}
-																else{
-																	if (showGUI){JOptionPane.showMessageDialog(null,"Error: Unrecognised source type: '"+testSource.getSourceType()+"' for source '"+wChNames[j]+"' in file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);}
-																	logWindow.println("Error: Unrecognised source type: '"+testSource.getSourceType()+"' for source '"+wChNames[j]+"' in file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.\r\n");
-																}
-		
-																if (sourceID.equals(testSourceID)==false){
-																	Source.removeSource(mySQLStatement, siteID, testSourceID);
-																}
-		
-																//}catch(SQLException sE){
-																//	sE.printStackTrace();
-																//	JOptionPane.showMessageDialog(null,"Error occurred while adding a new source: '"+wChNames[j]+"' for file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);
-																//	logWindow.println("Error occurred while adding a new source: '"+wChNames[j]+"' for file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.\r\n");
-																//}
+																sourceID = Source.addSource(logWindow,showGUI,mySQLStatement, site, testSource,fileList.get(i).getName(), true);
 														}
 														else{
 															if (showGUI){JOptionPane.showMessageDialog(null,"Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);}
+															//determine appliance type
 															logWindow.println("Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.");
 														}
 													}
@@ -1682,15 +1639,15 @@ public class PDCValidator implements Runnable{
 		return timeString;
 	}
 	
-	private String getSourceType(String chName){
+	private String getSourceType(String chName, String sensorCh){
 		String sourceType = "";
 		//determine appliance type
 		if (chName.startsWith("A")){sourceType = "Appliance";}
 		else if (chName.startsWith("G")){sourceType = "Gas";}
-		else if (chName.startsWith("H")){sourceType = "Humidity";}
+		else if (chName.startsWith("H") || sensorCh.equals("01")){sourceType = "Humidity";}
 		else if (chName.startsWith("L")){sourceType = "Light";}
 		else if (chName.startsWith("M")){sourceType = "Motion";}
-		else if (chName.startsWith("T")){sourceType = "Temperature";}
+		else if (chName.startsWith("T") || sensorCh.equals("00")){sourceType = "Temperature";}
 		else if (chName.startsWith("W")){sourceType = "Water";}
 		return sourceType;
 	}

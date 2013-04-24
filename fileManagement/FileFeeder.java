@@ -150,7 +150,7 @@ public class FileFeeder implements Runnable{
 							sE.printStackTrace();
 						}
 					}catch(SQLException sE){ //NON FATAL
-						JOptionPane.showMessageDialog(null,"FATAL ERROR: could not collect/add range limits for file "+dataFile.fileName+" to database.\r\nFile will not be written.","Error",JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null,"Warning: could not collect/add range limits for file "+dataFile.fileName+" to database.\r\nFile will not be written.","Warning",JOptionPane.WARNING_MESSAGE);
 						logWindow.println("Warning: could not collect range limits from database for source '"+dataFile.sourceID+"'.");	
 						sE.printStackTrace();
 					}

@@ -128,7 +128,7 @@ public class PDCDecodeWindow extends JFrame implements ActionListener{
 		
 		
 		if (AcnEvt.getSource() == nextButton){
-			Thread processThread = new Thread(new PDCValidator(fileList,null,new LogWindow("PDC File Processing Log"),true,false,true,false));
+			Thread processThread = new Thread(new PDCValidator(fileList,null,new LogWindow("PDC File Processing Log"),true,false,true,false,false));
 			processThread.start();
 		}
 	}

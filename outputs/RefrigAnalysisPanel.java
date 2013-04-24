@@ -6,7 +6,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -73,12 +72,6 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 	JComboBox<String> endDateS = new JComboBox<String>();
 	JLabel inclusiveL = new JLabel("(inclusive)");
 	
-	//Output File Selection Panel
-	JPanel outFilePanel = new JPanel();
-	JTextField outFileField = new JTextField(20); 
-	JButton outFileButton = new JButton("Select Output File...");
-	JFileChooser outFileChooser = new JFileChooser();
-	File outFile = null;
 	//Threshold Panel
 	JPanel thresholdPanel = new JPanel();
 	JLabel threshLabel1 = new JLabel("Theshold 1");
@@ -155,11 +148,11 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 		startDateS.addItemListener(this);
 		
 		//Output File
-		outFilePanel.add(outFileField);
-		outFilePanel.add(outFileButton);
-		outFileField.setEditable(false);
-		outFileField.setEnabled(false);
-		outFileButton.addActionListener(this);
+		//outFilePanel.add(outFileField);
+		//outFilePanel.add(outFileButton);
+		//outFileField.setEditable(false);
+		//outFileField.setEnabled(false);
+		//outFileButton.addActionListener(this);
 		
 		thresholdPanel.setLayout(new FlowLayout());
 		thresholdPanel.add(threshLabel1);
@@ -185,13 +178,11 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 		mainPanel.setLayout(new BoxLayout(mainPanel,BoxLayout.Y_AXIS));
 		mainPanel.add(siteSelectPanel);
 		mainPanel.add(datePanel);
-		mainPanel.add(outFilePanel);
+		//mainPanel.add(outFilePanel);
 		mainPanel.add(thresholdPanel);
 		mainPanel.add(pwrCorrPanel);
 		mainPanel.add(analysePanel);
 		mainPanel.setBorder(BorderFactory.createEmptyBorder(0,5,0,5));
-		
-		
 		
 		siteTable.updateList(dbConn);
 		this.add(mainPanel,BorderLayout.CENTER);
@@ -199,7 +190,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 
 
 	public void actionPerformed(ActionEvent aE) {
-		if (aE.getSource()==outFileButton){
+		/*if (aE.getSource()==outFileButton){
 			outFileChooser.setCurrentDirectory(new File("./"));
 			outFileChooser.setSelectedFile(new File("./output.csv"));
 			int returnVal = outFileChooser.showSaveDialog(outFileChooser);
@@ -237,56 +228,51 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 				}
 			}
 		}
-		else if (aE.getSource()==analyseButton){
+		else */if (aE.getSource()==analyseButton){
 			if (refrigSourceTable.sourceListModel.isSelectionEmpty()==false && refrigSourceTable.getValueAt(refrigSourceTable.getSelectedRow(),0) != null){
 				Source refrigSource = refrigSourceTable.sourceList.get(refrigSourceTable.getSelectedRow());
 				long startDate = dateRange.get(startDateS.getSelectedIndex());
 				long endDate = dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex());
-				if (outFile != null){
-					if (threshInput1.getText().matches("\\d{1,5}") && threshInput2.getText().matches("\\d{1,5}")){
-						if (Double.parseDouble(threshInput1.getText())<=Double.parseDouble(threshInput2.getText()) || (Double.parseDouble(threshInput1.getText())>0 && Double.parseDouble(threshInput2.getText())==0)){
-							if (pwrCorrT.getText().matches("\\d{1,2}[.]\\d{1,2}")){
-								long[] lowFreqFileDates = null;
-								try{
-									String findLowFreqFiles = "SELECT UNIX_TIMESTAMP(start_date) AS start_date,UNIX_TIMESTAMP(end_date) AS end_date FROM files WHERE site_id = "+refrigSource.getSite().getSiteID()+" AND source_id = "+refrigSource.getSourceID()+" AND end_date >= '"+sqlDateFormatter.format(startDate)+"' AND start_date <= '"+sqlDateFormatter.format(endDate)+"' AND frequency >= 600";
-									ResultSet lowFrewFilesRS = dbConn.createStatement().executeQuery(findLowFreqFiles);
-									if (lowFrewFilesRS.next()){
-										lowFreqFileDates = new long[] {lowFrewFilesRS.getLong("start_date"), lowFrewFilesRS.getLong("end_date")};
-									}
-									
-									lowFrewFilesRS.close();
-								} catch(SQLException sE){
-									
+				if (threshInput1.getText().matches("\\d{1,5}") && threshInput2.getText().matches("\\d{1,5}")){
+					if (Double.parseDouble(threshInput1.getText())<=Double.parseDouble(threshInput2.getText()) || (Double.parseDouble(threshInput1.getText())>0 && Double.parseDouble(threshInput2.getText())==0)){
+						if (pwrCorrT.getText().matches("\\d{1,2}[.]\\d{1,2}")){
+							long[] lowFreqFileDates = null;
+							try{
+								String findLowFreqFiles = "SELECT UNIX_TIMESTAMP(start_date) AS start_date,UNIX_TIMESTAMP(end_date) AS end_date FROM files WHERE site_id = "+refrigSource.getSite().getSiteID()+" AND source_id = "+refrigSource.getSourceID()+" AND end_date >= '"+sqlDateFormatter.format(startDate)+"' AND start_date <= '"+sqlDateFormatter.format(endDate)+"' AND frequency >= 600";
+								ResultSet lowFrewFilesRS = dbConn.createStatement().executeQuery(findLowFreqFiles);
+								if (lowFrewFilesRS.next()){
+									lowFreqFileDates = new long[] {lowFrewFilesRS.getLong("start_date"), lowFrewFilesRS.getLong("end_date")};
 								}
-								boolean processOk = true;
-								if (lowFreqFileDates!=null){ // If found some files with low frequency
-									int response = JOptionPane.showConfirmDialog(this, "Refrigerator data with low sample frequency exists between "+dateFormatter.format(lowFreqFileDates[0]*1000)+" and "+dateFormatter.format(lowFreqFileDates[1]*1000)+"\r\nIt is suggested that these data are too infrequent to be useful.\r\nWould you like to continue anyway?","Warning: Infrequent data detected",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE);
-									processOk = (response==JOptionPane.YES_OPTION);
-								}
-								if (processOk){
-									Source tempSource = null;
-									if (tempSourceTable.sourceListModel.isSelectionEmpty()==false){
-										tempSource = tempSourceTable.sourceList.get(tempSourceTable.getSelectedRow());
-									}
-									Thread analysisThread = new Thread(new RefrigAnalysis(dbConn,new LogWindow("Refrigerator Analysis Log"),refrigSourceTable.sourceList.get(refrigSourceTable.getSelectedRow()),tempSource,dateRange.get(startDateS.getSelectedIndex()),dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()),outFile,Double.parseDouble(threshInput1.getText()),Double.parseDouble(threshInput2.getText()),Integer.parseInt(basePowerS.getSelectedItem().toString()),Double.parseDouble(pwrCorrT.getText())));
-									analysisThread.start();
-								}
-								
+
+								lowFrewFilesRS.close();
+							} catch(SQLException sE){
+
 							}
-							else{
-						       	JOptionPane.showMessageDialog(null, "Error Code 006\r\nPlease enter a positive decimal for power correction eg. '0.4'.\r\nYou may specify up to two (2) decimal places.\r\nIf you do not wish to use a power correction, please use '0.0'.", "Error", JOptionPane.ERROR_MESSAGE);
+							boolean processOk = true;
+							if (lowFreqFileDates!=null){ // If found some files with low frequency
+								int response = JOptionPane.showConfirmDialog(this, "Refrigerator data with low sample frequency exists between "+dateFormatter.format(lowFreqFileDates[0]*1000)+" and "+dateFormatter.format(lowFreqFileDates[1]*1000)+"\r\nIt is suggested that these data are too infrequent to be useful.\r\nWould you like to continue anyway?","Warning: Infrequent data detected",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE);
+								processOk = (response==JOptionPane.YES_OPTION);
 							}
-						}	
-						else{
-					       	JOptionPane.showMessageDialog(null, "Error Code 005\r\nTheshold 2 must be greater than Threshold 1 unless Theshold 2 is not to be used,\r\nin which case it should be set to the same value as Theshold 1 or to a value of 0 (zero).", "Error", JOptionPane.ERROR_MESSAGE);
+							if (processOk){
+								Source tempSource = null;
+								if (tempSourceTable.sourceListModel.isSelectionEmpty()==false){
+									tempSource = tempSourceTable.sourceList.get(tempSourceTable.getSelectedRow());
+								}
+								Thread analysisThread = new Thread(new RefrigAnalysis(dbConn,new LogWindow("Refrigerator Analysis Log"),refrigSourceTable.sourceList.get(refrigSourceTable.getSelectedRow()),tempSource,dateRange.get(startDateS.getSelectedIndex()),dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()),Double.parseDouble(threshInput1.getText()),Double.parseDouble(threshInput2.getText()),Integer.parseInt(basePowerS.getSelectedItem().toString()),Double.parseDouble(pwrCorrT.getText())));
+								analysisThread.start();
+							}
+
 						}
-					}
+						else{
+							JOptionPane.showMessageDialog(null, "Error Code 006\r\nPlease enter a positive decimal for power correction eg. '0.4'.\r\nYou may specify up to two (2) decimal places.\r\nIf you do not wish to use a power correction, please use '0.0'.", "Error", JOptionPane.ERROR_MESSAGE);
+						}
+					}	
 					else{
-			        	JOptionPane.showMessageDialog(null, "Error Code 004\r\nPlease enter a positive integer value for both thresholds. (eg. 50 and 150)\r\nTheshold 2 may also be zero if it is not to be used.", "Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, "Error Code 005\r\nTheshold 2 must be greater than Threshold 1 unless Theshold 2 is not to be used,\r\nin which case it should be set to the same value as Theshold 1 or to a value of 0 (zero).", "Error", JOptionPane.ERROR_MESSAGE);
 					}
 				}
 				else{
-		        	JOptionPane.showMessageDialog(null, "Error Code 003\r\nPlease specify a valid output file.", "Error", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null, "Error Code 004\r\nPlease enter a positive integer value for both thresholds. (eg. 50 and 150)\r\nTheshold 2 may also be zero if it is not to be used.", "Error", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 			else{
@@ -386,6 +372,9 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 		else{ //This should never be bale to happen
 			throw new Exception("NoSource");
 		}
+		if (refrigSourceTable.sourceListModel.isSelectionEmpty()==false && refrigSourceTable.getValueAt(refrigSourceTable.getSelectedRow(),0).toString()!=null){
+			analyseButton.setEnabled(true);
+		}
 		startDateS.addActionListener(this);
 	}
 	
@@ -405,6 +394,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 			if (refrigSourceTable.sourceListModel.isSelectionEmpty()){
 				startDateS.removeAllItems();
 				endDateS.removeAllItems();
+				analyseButton.setEnabled(false);
 			}
 		}
 		else if (lSE.getSource().equals(refrigSourceTable.sourceListModel) && lSE.getValueIsAdjusting()==false){
@@ -415,12 +405,14 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 				} catch (SQLException e) {
 					startDateS.removeAllItems();
 					endDateS.removeAllItems();
+					analyseButton.setEnabled(false);
 					startDateS.addItem("ERR:NoData");
 					endDateS.addItem("ERR:NoData");
 					e.printStackTrace();
 				}catch (Exception e){
 					startDateS.removeAllItems();
 					endDateS.removeAllItems();
+					analyseButton.setEnabled(false);
 					startDateS.addItem(e.getMessage());
 					endDateS.addItem(e.getMessage());
 				}
@@ -428,6 +420,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 			else{
 				startDateS.removeAllItems();
 				endDateS.removeAllItems();
+				analyseButton.setEnabled(false);
 			}
 		}
 		
@@ -438,7 +431,5 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 		if (iE.getSource().equals(startDateS) && iE.getStateChange()==ItemEvent.SELECTED){
 			populateEndDate();
 		}
-	}
-		
-		
+	}	
 }

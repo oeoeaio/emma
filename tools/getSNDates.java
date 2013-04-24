@@ -153,20 +153,20 @@ public class getSNDates extends Thread{
 	            int readByte = fileHandler.readByte();
 
 	            if( readByte == 0xA ) {
-	                if( filePointer == fileLength ) {
-	                    continue;
-	                } else {
+	                if( sb.length() > 0 ) {
 	                    break;
+	                } else {
+	                    continue;
 	                }
 	            } else if( readByte == 0xD ) {
-	                if( filePointer == fileLength - 1 ) {
-	                    continue;
-	                } else {
+	                if( sb.length() > 0 ) {
 	                    break;
+	                } else {
+	                    continue;
 	                }
 	            }
-
-	            sb.append( ( char ) readByte );
+	            
+	            sb.append( ( char ) readByte ); 
 	        }
 	        
 	        fileHandler.close();

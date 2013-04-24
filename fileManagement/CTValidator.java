@@ -32,6 +32,7 @@ import javax.swing.JTextField;
 import endUseWindow.LogWindow;
 import endUseWindow.MySQLConnection;
 import endUseWindow.Site;
+import endUseWindow.Source;
 
 
 public class CTValidator implements Runnable{
@@ -59,17 +60,17 @@ public class CTValidator implements Runnable{
 			inputStream = new BufferedReader(new FileReader(ctFile));
 			
 			String line = "";
-			if ((line=inputStream.readLine())!=null && Pattern.matches("^\\d{8}(	(Volts)){3}(	|(\\d{3,8}))+$",line)){
+			if ((line=inputStream.readLine())!=null && Pattern.matches("^\\d{8}((	(Volts)){3}){0,1}(	|(\\d{3,8}))+$",line)){
 				meterSerial = line.split("	")[0];
 				logWindow.println("Meter Serial found for file: "+ctFile.getName()+" (meterSN: "+meterSerial+")");
-				if ((line=inputStream.readLine())!=null && line.matches("^.{1,16}(	((Ph )\\d)){3}(	|(.{1,16}))+$")){
+				if ((line=inputStream.readLine())!=null && line.matches("^.{1,16}(	(((Ph )\\d)){3}){0,1}(	|(.{1,16}))+$")){
 					String[] splitLine = line.split("	");
 					for(int i=0;i<splitLine.length;i++){
 						splitLine[i] = splitLine[i].trim();
 					}
 					
 					Site site = null;
-					if (splitLine.length >= 10){ //site name, 3 phases and 6 circuits
+					if (splitLine.length >= 2){
 						try{
 							String testSiteName = splitLine[0];
 							
@@ -92,6 +93,9 @@ public class CTValidator implements Runnable{
 							site = null;
 						}
 					}
+					else{
+						logWindow.println("Invalid file format, must contain at least a date column and a data column");
+					}
 					
 					
 					if (site!=null){ //if found a site ID
@@ -101,7 +105,7 @@ public class CTValidator implements Runnable{
 							String sourceID = null;
 							if (splitLine[i].matches("^[\\w\\s\\Q#&()[]:-+=/\\.?\\E]{1,16}$")){
 								try{
-									ResultSet sourceIDRS = dbConn.createStatement().executeQuery("SELECT source_id FROM sources WHERE site_id = "+site.getSiteID()+" AND source_name = '"+splitLine[i]+"' AND (source_type = 'Circuit' || source_type = 'Phase')");
+									ResultSet sourceIDRS = dbConn.createStatement().executeQuery("SELECT source_id FROM sources WHERE site_id = "+site.getSiteID()+" AND source_name = '"+splitLine[i]+"'");
 									
 									if (sourceIDRS.next()){
 										sourceID = sourceIDRS.getString("source_id");
@@ -125,26 +129,45 @@ public class CTValidator implements Runnable{
 												logWindow.println("Failed.");
 											}
 										}
-										else { //circuit
-											logWindow.printString("Warning: unable to match specified circuit '"+splitLine[i]+"'.\r\nAdding circuit '"+splitLine[i]+"' to database...");
-											String addCircuitSourceSQL = "INSERT INTO sources (site_id,source_name,source_type,measurement_type) VALUES("+site.getSiteID()+",'"+splitLine[i]+"','Circuit','ActPower')";
-											dbConn.createStatement().executeUpdate(addCircuitSourceSQL);
-											ResultSet new_circuit_source_id = dbConn.createStatement().executeQuery("SELECT LAST_INSERT_ID() AS current_id"); //returns new id
-											new_circuit_source_id.next();
-											sourceID = new_circuit_source_id.getString("current_id");
-											try{
-												dbConn.createStatement().executeUpdate("INSERT INTO circuits (site_id,source_id) VALUES("+site.getSiteID()+","+sourceID+")");
-												logWindow.println("Done.");
-											} catch(SQLException sE){
+										else { //don't know, so ask
+											String sourceType = "";
+											String[] sourceTypes = new String[] {"Appliance","Circuit","Gas","Humidity","Light","Motion","Temperature","Water"};
+											sourceType = (String)JOptionPane.showInputDialog(null, "Please provide a source type for channel: '"+splitLine[i]+".\r\nPlease select the appropriate type from the list:", "Select Source Type", JOptionPane.PLAIN_MESSAGE, null, sourceTypes, "Circuit");
+											if(sourceType == null){sourceType = "";}
+											String measurementType = "";
+											String[] measurementTypes = new String[] {"ActEnergy","AppEnergy","OnTime","Temp","Humidity","Pulse","ActPower","AppPower","LightLevel","Volts","Amps","AvgTemp"};
+											measurementType = (String)JOptionPane.showInputDialog(null, "Please provide a measurement type for channel: '"+splitLine[i]+".\r\nPlease select the appropriate type from the list:", "Select Source Type", JOptionPane.PLAIN_MESSAGE, null, measurementTypes, "ActPower");
+											if(measurementType == null){measurementType = "";}
+											if (!sourceType.equals("") || !measurementType.equals("")){
+												logWindow.printString("Warning: unable to match specified source '"+splitLine[i]+"'.\r\nAdding circuit '"+splitLine[i]+"' to database...");
+												/*String addCircuitSourceSQL = "INSERT INTO sources (site_id,source_name,source_type,measurement_type) VALUES("+site.getSiteID()+",'"+splitLine[i]+"','Circuit','ActPower')";
+												dbConn.createStatement().executeUpdate(addCircuitSourceSQL);
+												ResultSet new_circuit_source_id = dbConn.createStatement().executeQuery("SELECT LAST_INSERT_ID() AS current_id"); //returns new id
+												new_circuit_source_id.next();
+												sourceID = new_circuit_source_id.getString("current_id");
+												try{
+													dbConn.createStatement().executeUpdate("INSERT INTO circuits (site_id,source_id) VALUES("+site.getSiteID()+","+sourceID+")");
+													logWindow.println("Done.");
+												} catch(SQLException sE){
+													sourceID = null;
+													removeSource(site.getSiteID(),sourceID);
+													sE.printStackTrace();
+													logWindow.println("Failed.");
+												}*/
+											
+												Statement mySQLStatement = dbConn.createStatement();
+												Source testSource = new Source(site,null,splitLine[i],sourceType,measurementType);
+												sourceID = Source.addSource(logWindow, true, mySQLStatement, site, testSource, ctFile.getName(), true);
+									
+											}
+											else{
 												sourceID = null;
-												removeSource(site.getSiteID(),sourceID);
-												sE.printStackTrace();
-												logWindow.println("Failed.");
+												logWindow.println("Error: source type not provided, no data will be written.");
 											}
 										}
-
 									}
 								} catch(SQLException sE){
+									sE.printStackTrace();
 									sourceID = null;
 									logWindow.println("Warning: unable to match specified source '"+splitLine[i]+"'");
 								}
@@ -344,7 +367,7 @@ public class CTValidator implements Runnable{
 						else{
 							//invalid data point
 							try {
-								fileList.get(i-1).addRow(new DataPoint(dateTranslator.parse(splitline[0]).getTime(),null));
+								fileList.get(i-1).addRow(new DataPoint(dateTranslator.parse(splitline[0]).getTime(),-123.456));
 							} catch (NumberFormatException e) {
 								e.printStackTrace();
 							} catch (ParseException e) {

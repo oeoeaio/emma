@@ -92,7 +92,7 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		this.setVisible(false);
 		this.setSize(600,300);
 		this.setLocation(300,200);
-		this.setTitle("Clash of site data detected.");
+		this.setTitle("Site Not Found");
 		
 		mainPanel.add(topPanel,BorderLayout.NORTH);
 		mainPanel.add(middlePanel,BorderLayout.CENTER);
