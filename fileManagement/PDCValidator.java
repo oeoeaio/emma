@@ -32,6 +32,31 @@ import endUseWindow.Source;
 public class PDCValidator implements Runnable{
 	
 
+	public static class FileData {
+		public final String[] currConcHeaders;
+		public final ArrayList<String[]> currCTModHeaders;
+		public final ArrayList<String[]> currWModHeaders;
+		public final ArrayList<Long> currConcDateData;
+		public final double[][] currConcPhaseData;
+		public final double[][] currCTModData;
+		public final double[][] currWModData;
+		public final String currConcSN;
+		public final boolean validDataExtracted;
+
+		public FileData(String[] currConcHeaders,ArrayList<String[]> currCTModHeaders,ArrayList<String[]> currWModHeaders,ArrayList<Long> currConcDateData,double[][] currConcPhaseData,double[][] currCTModData,double[][] currWModData,String currConcSN,boolean validDataExtracted) {
+			this.currConcHeaders = currConcHeaders;
+			this.currCTModHeaders = currCTModHeaders;
+			this.currWModHeaders = currWModHeaders;
+			this.currConcDateData = currConcDateData;
+			this.currConcPhaseData = currConcPhaseData;
+			this.currCTModData = currCTModData;
+			this.currWModData = currWModData;
+			this.currConcSN = currConcSN;
+			this.validDataExtracted = validDataExtracted;
+		}
+		
+	}
+
 	//variables
 	private LogWindow logWindow;
 	private Connection dbConn = null;
@@ -45,18 +70,18 @@ public class PDCValidator implements Runnable{
 	
 	private ArrayList<FileIssue> fileIssueList = new ArrayList<FileIssue>();
 	private ArrayList<String[]> sourceIssueList = new ArrayList<String[]>();
-	private ArrayList<String> concSNList = new ArrayList<String>(); // list of siteID associations for each file.
 	//private ArrayList<String> brokenSiteNameList = new ArrayList<String>(); // list of siteID associations for each file.
 	private ArrayList<File> fileList = new ArrayList<File>(); //pointer object for the file selected by the user
 	//private ArrayList<String[]> brokenFileList = new ArrayList<String[]>(); //pointer object for holding broken file info
 	
-	private ArrayList<String[]> ALL_CONC_HEADERS = new ArrayList<String[]>();
-	private ArrayList<ArrayList<String[]>> ALL_W_MOD_HEADERS = new ArrayList<ArrayList<String[]>>();
-	private ArrayList<ArrayList<String[]>> ALL_CT_MOD_HEADERS = new ArrayList<ArrayList<String[]>>();
-	private ArrayList<ArrayList<Long>> ALL_CONC_DATE_DATA = new ArrayList<ArrayList<Long>>();
-	private ArrayList<double[][]> ALL_CONC_PHASE_DATA = new ArrayList<double[][]>();
-	private ArrayList<double[][]> ALL_CT_MOD_DATA = new ArrayList<double[][]>();
-	private ArrayList<double[][]> ALL_W_MOD_DATA = new ArrayList<double[][]>();
+	//private ArrayList<String[]> ALL_CONC_HEADERS = new ArrayList<String[]>();
+	//private ArrayList<ArrayList<String[]>> ALL_W_MOD_HEADERS = new ArrayList<ArrayList<String[]>>();
+	//private ArrayList<ArrayList<String[]>> ALL_CT_MOD_HEADERS = new ArrayList<ArrayList<String[]>>();
+	//private ArrayList<ArrayList<Long>> ALL_CONC_DATE_DATA = new ArrayList<ArrayList<Long>>();
+	//private ArrayList<double[][]> ALL_CONC_PHASE_DATA = new ArrayList<double[][]>();
+	//private ArrayList<double[][]> ALL_CT_MOD_DATA = new ArrayList<double[][]>();
+	//private ArrayList<double[][]> ALL_W_MOD_DATA = new ArrayList<double[][]>();
+	
 	
 	private int[] concHeaderDelimiters = new int[2]; // Concentrator Header starts and lengths
 	private ArrayList<int[]> ctModHeaderDelimiters = new ArrayList<int[]>(); // CT Module Header starts and lengths
@@ -107,568 +132,37 @@ public class PDCValidator implements Runnable{
 		Date startTime = new Date();
 		
 		logWindow.println("Extracting data from "+fileList.size()+" selected file(s)...\r\n");
-		for (int i=0;i<fileList.size();i++){
-			/*synchronized(this){
-				if (paused){
-					try {
-						this.wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}Co
-				}
-			}*/
-			if (fileList.get(i).isFile()){
-				if (!extractData(fileList.get(i),i)){
-					i--;
-				}
-			}
-		}
-		logWindow.println("Done extracting, found "+fileList.size()+" valid file(s).");
-		
-		Date endProcessTime = new Date();
-		logWindow.println("Total extraction time: "+getTimeString(endProcessTime.getTime()-startTime.getTime())+"\r\n");
-		
-		//PDCWriter dbWriter = new PDCWriter();
-		//PDCFeeder pdcAdapter = new PDCFeeder();
-		PDCTextFileWriter fWriter = new PDCTextFileWriter();
-
 		if (writeToDatabase){
-			try {
-				if (dbConn!=null){
-					Site[] siteList = new Site[concSNList.size()]; 
-					try{
-						//build siteIDList
-						for (int i=0;i<concSNList.size();i++){
-							String fetchSiteIDSQL = "SELECT * FROM sites WHERE concentrator = '"+concSNList.get(i)+"' AND FROM_UNIXTIME("+(ALL_CONC_DATE_DATA.get(i).get(0)/1000)+") BETWEEN start_date AND end_date";
-							ResultSet siteRS = dbConn.createStatement().executeQuery(fetchSiteIDSQL);
-							if (siteRS.next()){
-								siteList[i] = new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("concentrator"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state"));
-							}
-							else{
-								siteList[i] = null;
-							}
-							siteRS.close();
-						}
-					} catch(SQLException sE){
-						sE.printStackTrace();
-						String errorMsg = "DB error while matching concentrator number to site.";
-						if (showGUI){JOptionPane.showMessageDialog(null,errorMsg,"Error",JOptionPane.ERROR_MESSAGE);}
-						logWindow.println(errorMsg+" Exiting...\r\n");
-						throw new SQLException(errorMsg); //throws to higher try/catch block, which will add issue to database
-					}
-					
-					FileFeeder fileFeeder = new FileFeeder(mySQLConnection, logWindow, fileIssueList, false);
-					Thread feederThread = new Thread(fileFeeder);
-					feederThread.start();
-					for (int i=0;i<fileList.size();i++){ //cycle through files and write info to database
-						Site site = siteList[i];
-						String siteID = (site==null?null:site.getSiteID());
-						
-						if(siteID!=null){
-						
-							Date fileStartTime = new Date();
-							
-							int frequency = getInterval(ALL_CONC_DATE_DATA.get(i),fileList.get(i).getName()); //get interval for file
-							if(frequency!=0){
-								System.out.println("Processing file: "+fileList.get(i).getName());
-								LinkedList<DataFile> dataFiles = new LinkedList<DataFile>();
-								Statement mySQLStatement = dbConn.createStatement();
-								try{
-									//check phase data
-
-									if (ALL_CONC_PHASE_DATA.get(i)[0].length==ALL_CONC_DATE_DATA.get(i).size()){ //check same number of rows
-										String[] phNames = new String [] {"Ph 1","Ph 2","Ph 3"};
-	
-										if (ALL_CONC_PHASE_DATA.get(i).length==phNames.length){ //check same number of columns
-											for (int j=0;j<ALL_CONC_PHASE_DATA.get(i).length;j++){
-												String sourceID = null;
-												String sourceType = "";
-												String measurementType = "";
-												//try{
-												String fetchSourceIDSQL =  "SELECT source_id,source_type,measurement_type FROM sources WHERE source_name = '"+phNames[j]+"' AND site_id = "+siteID;
-												ResultSet fetchSourceIDRS = mySQLStatement.executeQuery(fetchSourceIDSQL);
-	
-	
-												if (fetchSourceIDRS.next()){
-													sourceID = fetchSourceIDRS.getString("source_id");
-													sourceType = fetchSourceIDRS.getString("source_type");
-													measurementType = fetchSourceIDRS.getString("measurement_type");
-													if (!sourceType.equals("Phase")){
-														logWindow.println("Warning: Unexpected Source Type '"+sourceType+"' for source '"+phNames[j]+"'. Expected 'Phase'. Site: "+siteID+".");
-													}
-													if (!measurementType.equals("Volts")){
-														logWindow.println("Warning: Measurement Type '"+measurementType+"' for Phase '"+phNames[j]+"' does not match data in file '"+fileList.get(i).getName()+"' at site: "+siteID+".");
-														//TODO write to issues file.
-													}
-												}
-												else{
-													logWindow.println("No matching Source ID found for source '"+phNames[j]+"' at site "+siteID+". Adding now...");
-													
-													sourceType = "Phase";
-													measurementType = "Volts";
-													try{
-										
-														Source testSource = new Source(site,null,phNames[j],sourceType,measurementType);
-														sourceID = Source.addSource(logWindow, showGUI, mySQLStatement, site, testSource, fileList.get(i).getName(), true);
-
-													}catch(SQLException sE){
-														sE.printStackTrace();
-														String errorMsg = "DB error occured while adding a new source: "+phNames[j];
-														if (showGUI){JOptionPane.showMessageDialog(null,errorMsg,"Error",JOptionPane.ERROR_MESSAGE);}
-														logWindow.println(errorMsg);
-														throw new SQLException(); //throws to higher try/catch block, which will add issue to database
-													}
-												}
-												fetchSourceIDRS.close();
-												/*} catch (SQLException sE){
-													sE.printStackTrace();
-													String errorMsg = "DB error occured while matching source: '"+phNames[j]+"'.";
-													if (showGUI){JOptionPane.showMessageDialog(null,errorMsg,"Error",JOptionPane.ERROR_MESSAGE);}
-													logWindow.println(errorMsg);
-													fileIssueList.add(new String[] {fileList.get(i).getName(),"DBError",errorMsg});
-													throw new SQLException(); //throws to higher try/catch block, which will add issue to database
-												}
-												try{*/
-												if (sourceID!=null){
-													String fileExistsSQL = "SELECT * FROM files WHERE site_id = "+siteID+" AND source_id = "+sourceID+" AND file_name = '"+fileList.get(i).getName()+"' AND meter_sn = '"+concSNList.get(i)+"' AND frequency = "+frequency;
-													ResultSet fileExistsQuery = mySQLStatement.executeQuery(fileExistsSQL);
-													if (fileExistsQuery.next()==false){
-	
-														DataFile dataFile = new DataFile();
-														dataFile.siteID = siteID;
-														dataFile.sourceID = sourceID;
-														dataFile.fileName = fileList.get(i).getName().toString();
-														dataFile.file = fileList.get(i);
-														dataFile.frequency = frequency;
-														dataFile.meterSerial = concSNList.get(i);
-														dataFile.sourceType = sourceType;
-														dataFile.measurementType = measurementType;
-	
-														for (int k=0;k<ALL_CONC_PHASE_DATA.get(i)[j].length;k++){
-															dataFile.dataList.add(new DataPoint(ALL_CONC_DATE_DATA.get(i).get(k),ALL_CONC_PHASE_DATA.get(i)[j][k]));
-														}
-	
-														dataFiles.add(dataFile);
-	
-													}
-													else{
-														//fileIssueList.add(new String[] {fileList.get(i).getName(),"FileAlreadyExists",""});
-														logWindow.println("Ignored file "+fileList.get(i).getName()+". This file already exists for source "+sourceID+" at site "+siteID+".");	
-													}
-													fileExistsQuery.close();
-												}
-												else{
-													sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"SourceWriteError",phNames[j],""});
-													throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Could not match or create new source with name '"+phNames[j]+"'");
-												}
-											}
-										}
-										else{ //column count mismatch
-											fileIssueList.add(new FileIssue(fileList.get(i),"PHColMismatch",""));
-											throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Column count mismatch between wHeader and phData");
-										}
-									}
-									else{ // row count mismatch
-										fileIssueList.add(new FileIssue(fileList.get(i),"PHRowMismatch",""));
-										throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Row count mismatch between concDates and phData");
-									}
-
-									boolean legitimateHeaders = true;
-									//check circuit data
-									if (ALL_CT_MOD_DATA.get(i)[0].length==ALL_CONC_DATE_DATA.get(i).size()){ //check same number of rows
-										//Do CT channels
-										//build Channel Names Array
-										String[] ctModuleSNs = new String[ALL_CT_MOD_HEADERS.get(i).size()*6];
-										String[] ctNames = new String[ALL_CT_MOD_HEADERS.get(i).size()*6];
-										for (int c=0;c<ALL_CT_MOD_HEADERS.get(i).size();c++){ //CYCLES ONCE FOR EACH CT BLOCK (GROUP OF 6)
-											String[] ctNameParts= ALL_CT_MOD_HEADERS.get(i).get(c)[3].split(",");
-											for (int d=0;d<6;d++){
-												String tempCTChName = ctNameParts[d];
-												//sorts out dodgy headers and blank columns etc.
-												if (tempCTChName.matches("^[\\w\\s\\-\\?\\+\\&\\(\\)\\/]{1,16}$")==false){ //could be error or legitimately blank or corrupted header
-													//search for a legitimate header
-													String headerQuerySQL = "SELECT ct_ch_names FROM header_log WHERE date_time = (SELECT MAX(date_time) FROM header_log WHERE date_time <= '"+dateFormatter.format(ALL_CONC_DATE_DATA.get(i).get(0))+"' AND site_id = "+siteID+") AND site_id = "+siteID;
-													ResultSet lastHeaderRS = mySQLStatement.executeQuery(headerQuerySQL);
-													if (lastHeaderRS.next() && lastHeaderRS.getString("ct_ch_names").split(",").length == (ALL_CT_MOD_HEADERS.get(i).size()*6)){ // if found something and same number of channels
-														String previousName = lastHeaderRS.getString("ct_ch_names").split(",")[c*6+d];
-														if(previousName.matches("^[\\w\\s\\-\\?\\+\\&\\(\\)\\/]{1,16}$")){
-															tempCTChName = previousName;
-															legitimateHeaders = false;
-														}
-														else{ //if name is still bad
-															sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"InvalidSourceName",tempCTChName,""});
-															throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Source name '"+tempCTChName+"' is invalid.\r\n");
-														}
-													}
-													else{//if nothing relevant in database
-														sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"InvalidSourceName",tempCTChName,""});
-														throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Source name '"+tempCTChName+"' is invalid.\r\n");
-													}
-													lastHeaderRS.close();
-												}
-												
-												
-												//test that name does not already exist in Wireless Channel Name List
-												String fixedCTChName = tempCTChName;
-												int duplicateCounter = 0;
-												while (tempCTChName.matches("^[\\w\\s\\-\\?\\+\\&\\(\\)\\/]{1,16}$") && Arrays.asList(ctNames).contains(tempCTChName)){ //if ctChNames list already contains ctChName
-													duplicateCounter++;
-													tempCTChName = fixedCTChName + "("+duplicateCounter+")";
-												}
-												
-												if (duplicateCounter>0){ //if current channel is a duplicate
-													sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"DuplicateCTChName",ctNameParts[d],""});
-													//non fatal, so no exception thrown
-												}
-												
-												
-												ctNames[c*6+d] = tempCTChName;
-												ctModuleSNs[c*6+d] = ALL_CT_MOD_HEADERS.get(i).get(c)[0];
-											}
-										}
-										
-										if (ALL_CT_MOD_DATA.get(i).length==ctNames.length){ //check same number of columns
-											for (int j=0;j<ALL_CT_MOD_DATA.get(i).length;j++){
-												String fetchSourceIDSQL =  "SELECT source_id,source_type,measurement_type FROM sources WHERE source_name = '"+ctNames[j]+"' AND site_id = "+siteID;
-												ResultSet fetchSourceIDRS = mySQLStatement.executeQuery(fetchSourceIDSQL);
-	
-												String sourceID = null;
-												String sourceType = "";
-												String measurementType = "";
-												if (fetchSourceIDRS.next()){
-													sourceID = fetchSourceIDRS.getString("source_id");
-													sourceType = fetchSourceIDRS.getString("source_type");
-													measurementType = fetchSourceIDRS.getString("measurement_type");
-													if (!sourceType.equals("Circuit")){
-														logWindow.println("Warning: Unexpected Source Type '"+sourceType+"' for source '"+ctNames[j]+"'. Expected 'Circuit'. Site: "+siteID+".");
-													}
-													if (!measurementType.equals("ActPower")){
-														logWindow.println("Warning: Measurement Type '"+measurementType+"' for Circuit '"+ctNames[j]+"' does not match data in file '"+fileList.get(i).getName()+"' at site: "+siteID+".");
-														//TODO write to issues file.
-													}
-												}
-												else{
-													logWindow.println("No matching Source ID found for source '"+ctNames[j]+"' at site "+siteID+". Adding now...");
-	
-													sourceType = "Circuit";
-													measurementType = "ActPower";
-													try{
-														Source testSource = new Source(site,null,ctNames[j],sourceType,measurementType);
-														sourceID = Source.addSource(logWindow,showGUI,mySQLStatement, site, testSource,fileList.get(i).getName(), true);
-													}catch(SQLException sE){
-														sE.printStackTrace();
-														if (showGUI){JOptionPane.showMessageDialog(null,"Error occured while adding a new source: '"+ctNames[j]+"' for file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);}
-														logWindow.println("Error occured while adding a new source: '"+ctNames[j]+"' for file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.\r\n");
-													}
-												}
-												fetchSourceIDRS.close();
-												if (sourceID!=null){
-													String fileExistsSQL = "SELECT * FROM files WHERE site_id = "+siteID+" AND source_id = "+sourceID+" AND file_name = '"+fileList.get(i).getName()+"' AND meter_sn = '"+ctModuleSNs[j]+"' AND frequency = "+frequency;
-													ResultSet fileExistsQuery = mySQLStatement.executeQuery(fileExistsSQL);
-													if (fileExistsQuery.next()==false){
-	
-														DataFile dataFile = new DataFile();
-														dataFile.siteID = siteID;
-														dataFile.sourceID = sourceID;
-														dataFile.fileName = fileList.get(i).getName().toString();
-														dataFile.file = fileList.get(i);
-														dataFile.frequency = frequency;
-														dataFile.meterSerial = ctModuleSNs[j];
-														dataFile.sourceType = sourceType;
-														dataFile.measurementType = measurementType;
-	
-														for (int k=0;k<ALL_CT_MOD_DATA.get(i)[j].length;k++){
-															dataFile.dataList.add(new DataPoint(ALL_CONC_DATE_DATA.get(i).get(k),ALL_CT_MOD_DATA.get(i)[j][k]));
-														}
-	
-														dataFiles.add(dataFile);
-	
-													}
-													else{
-														//fileIssueList.add(new String[] {fileList.get(i).getName(),"FileAlreadyExists",""});
-														logWindow.println("Ignored file "+fileList.get(i).getName()+". This file already exists for source "+sourceID+" at site "+siteID+".");	
-													}
-													fileExistsQuery.close();
-												}
-												else{
-													sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"SourceWriteError",ctNames[j],""});
-													throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Could not match or create new source with name '"+ctNames[j]+"'");
-												}
-											}
-										}
-										else{ //column count mismatch
-											fileIssueList.add(new FileIssue(fileList.get(i),"CTColMismatch",""));
-											throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Column count mismatch between wHeader and ctData");
-										}
-									}
-									else{ // row count mismatch
-										fileIssueList.add(new FileIssue(fileList.get(i),"CTRowMismatch",""));
-										throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Row count mismatch between concDates and ctData");
-									}
-	
-									//check wireless data
-									if (ALL_W_MOD_DATA.get(i)[0].length==ALL_CONC_DATE_DATA.get(i).size()){ //check same number of rows
-										//Do wireless channels
-										//build Channel Names Array
-										String[] wChNames = new String[ALL_W_MOD_HEADERS.get(i).size()*6];
-										String[] wSensorSNs = new String[ALL_W_MOD_HEADERS.get(i).size()*6];
-										String[] wSensorChs = new String[ALL_W_MOD_HEADERS.get(i).size()*6];
-										for (int c=0;c<ALL_W_MOD_HEADERS.get(i).size();c++){ //c cycles through channels
-											String[] wChNameParts = ALL_W_MOD_HEADERS.get(i).get(c)[3].split(",");
-											String[] wSensorSNParts = ALL_W_MOD_HEADERS.get(i).get(c)[4].split(",");
-											String[] wSensorChParts = ALL_W_MOD_HEADERS.get(i).get(c)[5].split(",");
-											for (int d=0;d<6;d++){
-												String tempWChName = wChNameParts[d];
-												if (validateWChNames && (tempWChName.equals("[LEFT BLANK]") || tempWChName.matches("^[AGHLMTW][\\w\\s\\-\\(\\)\\/]{1,15}$")==false)){ //could be error or legitimately blank or corrupted header
-													//search for a legitimate header
-													String headerQuerySQL = "SELECT wl_ch_names FROM header_log WHERE date_time = (SELECT MAX(date_time) FROM header_log WHERE date_time <= '"+dateFormatter.format(ALL_CONC_DATE_DATA.get(i).get(0))+"' AND site_id = "+siteID+") AND site_id = "+siteID;
-													ResultSet lastHeaderRS = mySQLStatement.executeQuery(headerQuerySQL);
-													if (lastHeaderRS.next() && lastHeaderRS.getString("wl_ch_names").split(",").length == (ALL_W_MOD_HEADERS.get(i).size()*6)){ // if found something and same number of channels
-														String previousName = lastHeaderRS.getString("wl_ch_names").split(",")[c*6+d];
-														if(previousName.equals("[LEFT BLANK]")==false && previousName.matches("^[\\w\\s\\-\\(\\)\\/]{1,16}$")){
-															tempWChName = previousName;
-															legitimateHeaders = false;
-														}
-														else{ //if name is still bad
-															if (previousName.equals("[LEFT BLANK]")){
-																if (tempWChName.equals("[LEFT BLANK]")==false){ //if title had an error, but header log was ok
-																	tempWChName = previousName;
-																	legitimateHeaders = false;
-																}
-																for (int k=0;k<ALL_W_MOD_DATA.get(i)[c*6+d].length;k++){ //search for any data in this column
-																	if ((ALL_W_MOD_DATA.get(i)[c*6+d][k] == -123.456) == false){ //if any data other than blanks is found
-																		sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"InvalidSourceName",tempWChName,""});
-																		throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Source name '"+tempWChName+"' is invalid.\r\n");
-																	}
-																}
-																//if get to here, legitimately empty, but column will be ignored
-															}
-															else{
-																sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"InvalidSourceName",tempWChName,""});
-																throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Source name '"+tempWChName+"' is invalid.\r\n");
-															}
-														}
-													}
-													else{//if nothing relevant in database
-														if (tempWChName.equals("[LEFT BLANK]")){
-															for (int k=0;k<ALL_W_MOD_DATA.get(i)[c*6+d].length;k++){ //search for any data in this column
-																if ((ALL_W_MOD_DATA.get(i)[c*6+d][k] == -123.456) == false){ //if any data other than blanks is found
-																	sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"LeftBlankWithData",tempWChName,""});
-																	//suggests corruption of some kind, so throw
-																	throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Source name '"+tempWChName+"' is invalid.\r\n");
-																}
-															}
-															//if get to here, legitimately empty, but column will be ignored
-														}
-														else{ //has name but name is invalid, stop all writing so that error can be dealt with
-															sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"InvalidSourceName",tempWChName,""});
-															throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Source name '"+tempWChName+"' is invalid.\r\n");
-														}
-													}
-													lastHeaderRS.close();
-												}
-												
-												//test that name does not already exist in Wireless Channel Name List
-												String fixedWChName = tempWChName;
-												int duplicateCounter = 0;
-												while (tempWChName.equals("[LEFT BLANK]")==false && Arrays.asList(wChNames).contains(tempWChName)){ //if wchNames list already contains wChName (ignoring [LEFT BLANK]s)
-													duplicateCounter++;
-													tempWChName = fixedWChName + "("+duplicateCounter+")";
-													
-												}
-												
-												if (duplicateCounter>0){ //if current channel is a duplicate
-													sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"DuplicateWChName",wChNameParts[d],""});
-													//non fatal, so no exception thrown
-												}
-
-												wChNames[c*6+d] = tempWChName;
-												wSensorSNs[c*6+d] = wSensorSNParts[d];
-												wSensorChs[c*6+d] = wSensorChParts[d];
-											}
-										}
-	
-	
-										if (ALL_W_MOD_DATA.get(i).length==wChNames.length){ //check same number of columns
-											for (int j=0;j<ALL_W_MOD_DATA.get(i).length;j++){
-												if (wChNames[j].equals("[LEFT BLANK]")==false){ //ignore [LEFT BLANK]s
-													String fetchSourceIDSQL =  "SELECT source_id,source_type,measurement_type FROM sources WHERE source_name = '"+wChNames[j]+"' AND site_id = "+siteID;
-													ResultSet fetchSourceIDRS = mySQLStatement.executeQuery(fetchSourceIDSQL);
+			FileFeeder fileFeeder = new FileFeeder(mySQLConnection, logWindow, fileIssueList, false);
+			Thread feederThread = new Thread(fileFeeder);
+			feederThread.start();
+			
+			if (dbConn!=null){
 		
-													String sourceID = null;
-													String sourceType = "";
-													String measurementType = "";
-													if (fetchSourceIDRS.next()){
-														sourceID = fetchSourceIDRS.getString("source_id");
-														sourceType = fetchSourceIDRS.getString("source_type");
-														measurementType = fetchSourceIDRS.getString("measurement_type");
-														if (!sourceType.equals(getSourceType(wChNames[j],wSensorChs[j]))){
-															logWindow.println("Warning: Source Type '"+sourceType+"' for source '"+wChNames[j]+"' contradicts naming convention. Site: "+siteID+".");
-														}
-														if (!measurementType.equals(getMeasurementType(wSensorChs[j]))){
-															logWindow.println("Warning: Measurement Type '"+measurementType+"' for source '"+wChNames[j]+"' does not match data in file '"+fileList.get(i).getName()+"' at site: "+siteID+".");
-															//TODO write to issues file.
-														}
-													}
-													else{
-														logWindow.println("No matching Source ID found for source '"+wChNames[j]+"' at site "+siteID+". Adding now...");
-		
-														sourceType = getSourceType(wChNames[j],wSensorChs[j]);
-														measurementType = getMeasurementType(wSensorChs[j]);
-		
-														if (sourceType.equals("") && showGUI){
-															String[] sourceTypes = new String[] {"Appliance","Gas","Humidity","Light","Motion","Temperature","Water"};
-															sourceType = (String)JOptionPane.showInputDialog(null, "Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+fileList.get(i).getName()+"'.\r\nPlease select the appropriate type from the list:", "Select Source Type", JOptionPane.PLAIN_MESSAGE, null, sourceTypes, "Appliance");
-															if(sourceType == null){sourceType = "";}
-														}
-														if (!sourceType.equals("") || !measurementType.equals("")){
-																Source testSource = new Source(site,null,wChNames[j],sourceType,measurementType);
-																sourceID = Source.addSource(logWindow,showGUI,mySQLStatement, site, testSource,fileList.get(i).getName(), true);
-														}
-														else{
-															if (showGUI){JOptionPane.showMessageDialog(null,"Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);}
-															//determine appliance type
-															logWindow.println("Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+fileList.get(i).getName()+"'.\r\nSource will not be added at this point. File will be ignored.");
-														}
-													}
-													fetchSourceIDRS.close();
-													if (sourceID!=null){
-														String fileExistsSQL = "SELECT * FROM files WHERE site_id = "+siteID+" AND source_id = "+sourceID+" AND file_name = '"+fileList.get(i).getName()+"' AND meter_sn = '"+wSensorSNs[j]+"' AND frequency = "+frequency;
-														ResultSet fileExistsQuery = mySQLStatement.executeQuery(fileExistsSQL);
-														if (fileExistsQuery.next()==false){
-		
-															DataFile dataFile = new DataFile();
-															dataFile.siteID = siteID;
-															dataFile.sourceID = sourceID;
-															dataFile.fileName = fileList.get(i).getName().toString();
-															dataFile.file = fileList.get(i);
-															dataFile.frequency = frequency;
-															dataFile.meterSerial = wSensorSNs[j];
-															dataFile.sourceType = sourceType;
-															dataFile.measurementType = measurementType;
-		
-															for (int k=0;k<ALL_W_MOD_DATA.get(i)[j].length;k++){
-																dataFile.dataList.add(new DataPoint(ALL_CONC_DATE_DATA.get(i).get(k),ALL_W_MOD_DATA.get(i)[j][k]));
-															}
-		
-															dataFiles.add(dataFile);
-		
-														}
-														else{
-															//fileIssueList.add(new String[] {fileList.get(i).getName(),"FileAlreadyExists",""});
-															logWindow.println("Ignored file "+fileList.get(i).getName()+". This file already exists for source "+sourceID+" at site "+siteID+".");	
-														}
-														fileExistsQuery.close();
-													}
-													else{
-														sourceIssueList.add(new String[] {fileList.get(i).getName(),new File(fileList.get(i).getParent()).getName(),"SourceWriteError",wChNames[j],""});
-														throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Could not match or create new source with name '"+wChNames[j]+"'\r\n");
-													}
-												}
-												else{
-													// no need to do anything, legitimately empty data set
-												}
-											}
-										}
-										else{ //column count mismatch
-											fileIssueList.add(new FileIssue(fileList.get(i),"WColMismatch",""));
-											throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Column count mismatch between wHeader and wData\r\n");
-										}
-									}
-									else{ // row count mismatch
-										fileIssueList.add(new FileIssue(fileList.get(i),"WRowMismatch",""));
-										throw new FatalIssueException("Ignored file "+fileList.get(i).getName()+". Row count mismatch between concDates and wData\r\n");
-									}
-	
-									//send all files to file feeder
-									while( dataFiles.peek() != null ){
-										DataFile dataFile = dataFiles.poll();
-										/*try{
-											String fetchRangeLimitsSQL =  "SELECT min,max FROM ranges WHERE source_id = "+dataFile.sourceID+" AND site_id = "+siteID;
-											ResultSet fetchRangeLimitsRS = mySQLStatement.executeQuery(fetchRangeLimitsSQL);
-		
-											if (fetchRangeLimitsRS.next()){
-												dataFile.rangeMin = fetchRangeLimitsRS.getDouble("min");
-												dataFile.rangeMax = fetchRangeLimitsRS.getDouble("max");
-											}
-											else{
-												logWindow.println("No range limits found for "+dataFile.sourceID+" or site "+siteID+". Adding defaults now...");	
-		
-												dataFile.rangeMin = Source.getRangeMin(dataFile.sourceType,dataFile.measurementType);
-												dataFile.rangeMax = Source.getRangeMax(dataFile.sourceType,dataFile.measurementType,frequency);
-		
-												try{
-													String setRangeLimitsSQL =  "INSERT INTO ranges (site_id,source_id,min,max) VALUES("+siteID+","+dataFile.sourceID+","+dataFile.rangeMin+","+dataFile.rangeMax+")";
-													mySQLStatement.executeUpdate(setRangeLimitsSQL);
-												}catch(SQLException sE){ //NON FATAL
-													sE.printStackTrace();
-													logWindow.println("Warning: could not write range limits to database for file "+fileList.get(i).getName()+".");	
-												}
-											}
-		
-											SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-											dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
-											dataFile.startDate = dateFormatter.format(dataFile.dataList.get(0).dateTime);
-											dataFile.endDate = dateFormatter.format(dataFile.dataList.get(dataFile.dataList.size()-1).dateTime);*/
-		
-											fileFeeder.addFile(dataFile); //Send file to feeder
-										/*}catch(SQLException sE){ //NON FATAL
-											sE.printStackTrace();
-											logWindow.println("DB error occurred.");
-											logWindow.println("Warning: could not collect range limits from database for source '"+dataFile.sourceID+"'.");	
-										}*/
-									}
-									
-									//if get to here file will have been written
-									//check to see that no file or source errors were thrown
-									if (legitimateHeaders){//if no fatal errors (these throw exceptions) and haven't messed around with the headers
-										//write header log to file
-										try{
-											writeHeaderLog(siteID,dateFormatter.format(ALL_CONC_DATE_DATA.get(i).get(0)),ALL_CONC_HEADERS.get(i),ALL_CT_MOD_HEADERS.get(i),ALL_W_MOD_HEADERS.get(i));
-										}catch(SQLException sE){
-											//NON FATAL
-											sE.printStackTrace();
-											logWindow.println("Database error occurred while logging headers for file "+fileList.get(i).getName());
-										}
-									}
-								} catch(FatalIssueException fIE){
-									logWindow.println(fIE.getMessage());
-								}
-							}
-							else{
-								fileIssueList.add(new FileIssue(fileList.get(i),"NoFileFreq",""));
-								logWindow.println("Error: no file frequency found for file "+fileList.get(i).getName()+"\r\n");
-							}
-										
-							
-							//logWindow.println("Attempting to write "+ fileList.get(i).getName()+" to database...");
-							//dbWriter.writeDataToDatabase(logWindow,fileList.get(i).getName(),dbConn,installation_id,verbose,ALL_CONC_HEADERS.get(i),ALL_CT_MOD_HEADERS.get(i),ALL_W_MOD_HEADERS.get(i),ALL_CONC_DATE_DATA.get(i),ALL_CONC_PHASE_DATA.get(i),ALL_CT_MOD_DATA.get(i),ALL_W_MOD_DATA.get(i));
-							//pdcAdapter.adaptWireless(fileList.get(i).getName(),logWindow,mySQLConnection,siteID,ALL_CONC_DATE_DATA.get(i),ALL_W_MOD_HEADERS.get(i),ALL_W_MOD_DATA.get(i));
-							
-							Date fileEndTime = new Date();
-							logWindow.println("Time to write "+fileList.get(i).getName()+" to database: "+getTimeString(fileEndTime.getTime()-fileStartTime.getTime())+"\r\n");
-						}
-						else{
-							fileIssueList.add(new FileIssue(fileList.get(i),"NoSiteMatch","Could not match concentrator number "+concSNList.get(i)+" to a Site"));
-							logWindow.println("Error occured while processing "+fileList.get(i).getName()+" to database: unable to determine a Site ID for this file.\r\n");
+				for (int i=0;i<fileList.size();i++){
+					if (fileList.get(i).isFile()){
+						FileData fileData = extractData(fileList.get(i),i);
+						if (fileData.validDataExtracted){
+							validateForDatabase(fileFeeder,fileList.get(i),fileData);
 						}
 					}
-					synchronized(fileFeeder.fileList){
-						fileFeeder.moreFilesComing = false;
-						fileFeeder.fileList.notify();
-					}
-					Date joinStart = new Date();
-					logWindow.println("Total process and send time: "+getTimeString(joinStart.getTime()-startTime.getTime()));
-					logWindow.println("Total send time: "+getTimeString(joinStart.getTime()-endProcessTime.getTime()));
-					try {
-						feederThread.join();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					Date joinEnd = new Date();
-					logWindow.println("Total wait for feeder time: "+getTimeString(joinEnd.getTime()-joinStart.getTime()));
-					
-					
+				}
+				
+				synchronized(fileFeeder.fileList){
+					fileFeeder.moreFilesComing = false;
+					fileFeeder.fileList.notify();
+				}
+				Date joinStart = new Date();
+				logWindow.println("Total process and send time: "+getTimeString(joinStart.getTime()-startTime.getTime()));
+				try {
+					feederThread.join();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				Date joinEnd = new Date();
+				logWindow.println("Total wait for feeder time: "+getTimeString(joinEnd.getTime()-joinStart.getTime()));
+				
+				try{
 					//write broken file info to database and logfile, write here because outside brackets means dbConn error
 					Statement mySQLStatement = dbConn.createStatement();
 					for (int i=0;i<fileIssueList.size();i++){
@@ -688,69 +182,582 @@ public class PDCValidator implements Runnable{
 					}
 					
 					dbConn.close();
-					logWindow.println("\r\nFinished writing "+fileList.size()+" file(s) to database.\r\n");
-					Date endDataBaseTime = new Date();
-					logWindow.println("Total database write time: "+getTimeString(endDataBaseTime.getTime()-endProcessTime.getTime()));
 				}
-				else{
-					if (showGUI){JOptionPane.showMessageDialog(logWindow,"The selected database was is invalid, no data written.","Error",JOptionPane.ERROR_MESSAGE);}
+				catch(SQLException sE){
+					logWindow.println("WARNING: Error occurred while writing file processing logs (errors, etc) to database.\r\n");
 				}
-				
-				
+				logWindow.println("\r\nFinished writing "+fileList.size()+" file(s) to database.\r\n");
+				Date endDataBaseTime = new Date();
+				logWindow.println("Total log write time: "+getTimeString(endDataBaseTime.getTime()-joinEnd.getTime()));
+				logWindow.println("Total write time: "+getTimeString(endDataBaseTime.getTime()-startTime.getTime()));
 			}
-			catch (SQLException sE) {
-				sE.printStackTrace();
-				logWindow.println("FATAL DB ERROR OCCURRED, ISSUE WILL NOT BE RECORDED IN DB. EXITING...\r\n");
-				logWindow.println(" Exiting...\r\n");
+			else{
+				if (showGUI){JOptionPane.showMessageDialog(logWindow,"The selected database was is invalid, no data written.","Error",JOptionPane.ERROR_MESSAGE);}
 			}
 		}
-		
-		if (writeToFile){
-			for (int i=0;i<fileList.size();i++){
-				try {
-					logWindow.println("Attempting to write "+ fileList.get(i).getName()+" to file...");
-					File outputFile = new File(fileList.get(i).getName()+"(extracted).csv");
-					BufferedWriter outputStream = new BufferedWriter(new FileWriter(outputFile));
-					if (outputFile.canWrite()){
-						logWindow.println("Processing file: "+fileList.get(i).getName());
-						fWriter.writeHeaderToFile(outputStream,ALL_CONC_HEADERS.get(i),ALL_CT_MOD_HEADERS.get(i),ALL_W_MOD_HEADERS.get(i)); //Write dataTable to File
-						fWriter.writeDataToFile(outputStream,ALL_CONC_DATE_DATA.get(i),ALL_CONC_PHASE_DATA.get(i),ALL_CT_MOD_DATA.get(i),ALL_W_MOD_DATA.get(i)); //Write data to file
-						// (((Integer.parseInt(ALL_CONC_HEADERS.get(i+1)[2])) - (Integer.parseInt(ALL_CONC_HEADERS.get(i)[2]))) % 720 == 0)
-						// ALL_W_MOD_HEADERS.get(i)==ALL_W_MOD_HEADERS.get(i+1)
-						while(i<fileList.size()-1 && (((Integer.parseInt(ALL_CONC_HEADERS.get(i+1)[2])) - (Integer.parseInt(ALL_CONC_HEADERS.get(i)[2]))) % 720 == 0) && ALL_CONC_DATE_DATA.get(i+1).get(0)-ALL_CONC_DATE_DATA.get(i).get(ALL_CONC_DATE_DATA.get(i).size()-1)==60000){
-							i++;
-							logWindow.println("Processing file: "+fileList.get(i).getName());
-							fWriter.writeDataToFile(outputStream,ALL_CONC_DATE_DATA.get(i),ALL_CONC_PHASE_DATA.get(i),ALL_CT_MOD_DATA.get(i),ALL_W_MOD_DATA.get(i)); //Write data to file
-						}
-						if (i<fileList.size()-1){
-							if (((Integer.parseInt(ALL_CONC_HEADERS.get(i+1)[2])) - (Integer.parseInt(ALL_CONC_HEADERS.get(i)[2]))) % 720 != 0){
-								logWindow.println("Gap of "+(((Integer.parseInt(ALL_CONC_HEADERS.get(i+1)[2])) - (Integer.parseInt(ALL_CONC_HEADERS.get(i)[2]))) % 720)+" between: "+fileList.get(i).getName()+" and "+fileList.get(i+1).getName());
-							}
-							if (ALL_CONC_DATE_DATA.get(i+1).get(0)-ALL_CONC_DATE_DATA.get(i).get(ALL_CONC_DATE_DATA.get(i).size()-1)!=60000){
-								logWindow.println("Gap of "+((ALL_CONC_DATE_DATA.get(i+1).get(0)-ALL_CONC_DATE_DATA.get(i).get(ALL_CONC_DATE_DATA.get(i).size()-1))/60/1000)+" mins between: "+fileList.get(i).getName()+" and "+fileList.get(i+1).getName());
-							}
-							if (ALL_W_MOD_HEADERS.get(i)!=ALL_W_MOD_HEADERS.get(i+1)){
-								logWindow.println("Header Mismatch beteen files: "+fileList.get(i).getName()+" and "+fileList.get(i+1).getName());
-							}
-						}
-						outputStream.flush();
-						outputStream.close();
-						outputFile = new File("");
-					}
-					else{
-						logWindow.println("Cannot write to output file: "+outputFile.getName()+". Skipping...");
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+		else if (writeToFile){
+			validateForFileWrite();
 			logWindow.println("\r\nFinished writing "+fileList.size()+" file(s) to file.\r\n");
 		}
 		Date endTime = new Date();
 		logWindow.println("\r\nTotal time taken: "+getTimeString(endTime.getTime()-startTime.getTime()));
+		
+		logWindow.println("Done writing, found "+fileList.size()+" valid file(s).");
+		
+		Date endProcessTime = new Date();
+		logWindow.println("Total extraction time: "+getTimeString(endProcessTime.getTime()-startTime.getTime())+"\r\n");
+	}
+
+	private void validateForFileWrite() {
+		PDCTextFileWriter fWriter = new PDCTextFileWriter();
+		File currFile = fileList.get(0);
+		FileData fileData = extractData(fileList.get(0),0);
+		FileData nextFileData = extractData(fileList.get(1),1);
+		for (int i=1;i<fileList.size();i++){ //i is index of nextFile
+			try {
+				logWindow.println("Attempting to write "+ currFile.getName()+" to file...");
+				File outputFile = new File(currFile.getName()+"(extracted).csv");
+				BufferedWriter outputStream = new BufferedWriter(new FileWriter(outputFile));
+				if (outputFile.canWrite()){
+					logWindow.println("Processing file: "+currFile.getName());
+					fWriter.writeHeaderToFile(outputStream,fileData.currConcHeaders,fileData.currCTModHeaders,fileData.currWModHeaders); //Write dataTable to File
+					fWriter.writeDataToFile(outputStream,fileData.currConcDateData,fileData.currConcPhaseData,fileData.currCTModData,fileData.currWModData); //Write data to file
+					// (((Integer.parseInt(ALL_CONC_HEADERS.get(i+1)[2])) - (Integer.parseInt(ALL_CONC_HEADERS.get(i)[2]))) % 720 == 0)
+					// ALL_W_MOD_HEADERS.get(i)==ALL_W_MOD_HEADERS.get(i+1)
+					while(i<fileList.size() && (((Integer.parseInt(nextFileData.currConcHeaders[2])) - (Integer.parseInt(fileData.currConcHeaders[2]))) % 720 == 0) && nextFileData.currConcDateData.get(0)-fileData.currConcDateData.get(fileData.currConcDateData.size()-1)==60000){
+						currFile = fileList.get(i);
+						fileData = nextFileData;
+						if(i<fileList.size()-1){nextFileData = extractData(fileList.get(i+1),i+1);}
+						logWindow.println("Processing file: "+currFile.getName());
+						fWriter.writeDataToFile(outputStream,fileData.currConcDateData,fileData.currConcPhaseData,fileData.currCTModData,fileData.currWModData); //Write data to file
+						i++;
+					}
+					if (i<fileList.size()-1){
+						if (((Integer.parseInt(nextFileData.currConcHeaders[2])) - (Integer.parseInt(fileData.currConcHeaders[2]))) % 720 != 0){
+							logWindow.println("Gap of "+(((Integer.parseInt(nextFileData.currConcHeaders[2])) - (Integer.parseInt(fileData.currConcHeaders[2]))) % 720)+" between: "+currFile.getName()+" and "+fileList.get(i).getName());
+						}
+						if (nextFileData.currConcDateData.get(0)-fileData.currConcDateData.get(fileData.currConcDateData.size()-1)!=60000){
+							logWindow.println("Gap of "+((nextFileData.currConcDateData.get(0)-fileData.currConcDateData.get(fileData.currConcDateData.size()-1))/60/1000)+" mins between: "+currFile.getName()+" and "+fileList.get(i).getName());
+						}
+						if (fileData.currWModHeaders!=nextFileData.currWModHeaders){
+							logWindow.println("Header Mismatch beteen files: "+currFile.getName()+" and "+fileList.get(i+1).getName());
+						}
+					}
+					else{ //final file
+						//TODO this should check whether to actually write the final data file to the current file or not...s
+						logWindow.println("Processing file: "+currFile.getName());
+						fWriter.writeDataToFile(outputStream,fileData.currConcDateData,fileData.currConcPhaseData,fileData.currCTModData,fileData.currWModData); //Write data to file
+					}
+					outputStream.flush();
+					outputStream.close();
+					outputFile = new File("");
+				}
+				else{
+					logWindow.println("Cannot write to output file: "+outputFile.getName()+". Skipping...");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			if (i<fileList.size()){//will go past on final file
+				currFile = fileList.get(i);
+				fileData = nextFileData;
+				if (i<fileList.size()-1){nextFileData = extractData(fileList.get(i+1),i+1);}
+			}
+		}
+	}
+
+	private void validateForDatabase(FileFeeder fileFeeder,File currFile,FileData fileData) {
+		try {
+			if (dbConn!=null){
+				Site site = null;
+				try{
+					String fetchSiteIDSQL = "SELECT * FROM sites WHERE concentrator = '"+fileData.currConcSN+"' AND FROM_UNIXTIME("+(fileData.currConcDateData.get(0)/1000)+") BETWEEN start_date AND end_date";
+					ResultSet siteRS = dbConn.createStatement().executeQuery(fetchSiteIDSQL);
+					if (siteRS.next()){
+						site = new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("concentrator"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state"));
+					}
+					else{
+						site = null;
+					}
+					siteRS.close();
+				} catch(SQLException sE){
+					sE.printStackTrace();
+					String errorMsg = "DB error while matching concentrator number to site.";
+					if (showGUI){JOptionPane.showMessageDialog(null,errorMsg,"Error",JOptionPane.ERROR_MESSAGE);}
+					logWindow.println(errorMsg+" Exiting...\r\n");
+					throw new SQLException(errorMsg); //throws to higher try/catch block, which will add issue to database
+				}
+
+
+				String siteID = (site==null?null:site.getSiteID());
+
+				if(siteID!=null){
+
+					Date fileStartTime = new Date();
+
+					int frequency = getInterval(fileData.currConcDateData,currFile.getName()); //get interval for file
+					if(frequency!=0){
+						System.out.println("Processing file: "+currFile.getName());
+						LinkedList<DataFile> dataFiles = new LinkedList<DataFile>();
+						Statement mySQLStatement = dbConn.createStatement();
+						try{
+							//check phase data
+
+							if (fileData.currConcPhaseData[0].length==fileData.currConcDateData.size()){ //check same number of rows
+								String[] phNames = new String [] {"Ph 1","Ph 2","Ph 3"};
+
+								if (fileData.currConcPhaseData.length==phNames.length){ //check same number of columns
+									for (int j=0;j<fileData.currConcPhaseData.length;j++){
+										String sourceID = null;
+										String sourceType = "";
+										String measurementType = "";
+										//try{
+										String fetchSourceIDSQL =  "SELECT source_id,source_type,measurement_type FROM sources WHERE source_name = '"+phNames[j]+"' AND site_id = "+siteID;
+										ResultSet fetchSourceIDRS = mySQLStatement.executeQuery(fetchSourceIDSQL);
+
+
+										if (fetchSourceIDRS.next()){
+											sourceID = fetchSourceIDRS.getString("source_id");
+											sourceType = fetchSourceIDRS.getString("source_type");
+											measurementType = fetchSourceIDRS.getString("measurement_type");
+											if (!sourceType.equals("Phase")){
+												logWindow.println("Warning: Unexpected Source Type '"+sourceType+"' for source '"+phNames[j]+"'. Expected 'Phase'. Site: "+siteID+".");
+											}
+											if (!measurementType.equals("Volts")){
+												logWindow.println("Warning: Measurement Type '"+measurementType+"' for Phase '"+phNames[j]+"' does not match data in file '"+currFile.getName()+"' at site: "+siteID+".");
+												//TODO write to issues file.
+											}
+										}
+										else{
+											logWindow.println("No matching Source ID found for source '"+phNames[j]+"' at site "+siteID+". Adding now...");
+
+											sourceType = "Phase";
+											measurementType = "Volts";
+											try{
+
+												Source testSource = new Source(site,null,phNames[j],sourceType,measurementType);
+												sourceID = Source.addSource(logWindow, showGUI, mySQLStatement, site, testSource, currFile.getName(), true);
+
+											}catch(SQLException sE){
+												sE.printStackTrace();
+												String errorMsg = "DB error occured while adding a new source: "+phNames[j];
+												if (showGUI){JOptionPane.showMessageDialog(null,errorMsg,"Error",JOptionPane.ERROR_MESSAGE);}
+												logWindow.println(errorMsg);
+												throw new SQLException(); //throws to higher try/catch block, which will add issue to database
+											}
+										}
+										fetchSourceIDRS.close();
+										/*} catch (SQLException sE){
+												sE.printStackTrace();
+												String errorMsg = "DB error occured while matching source: '"+phNames[j]+"'.";
+												if (showGUI){JOptionPane.showMessageDialog(null,errorMsg,"Error",JOptionPane.ERROR_MESSAGE);}
+												logWindow.println(errorMsg);
+												fileIssueList.add(new String[] {currFile.getName(),"DBError",errorMsg});
+												throw new SQLException(); //throws to higher try/catch block, which will add issue to database
+											}
+											try{*/
+										if (sourceID!=null){
+											String fileExistsSQL = "SELECT * FROM files WHERE site_id = "+siteID+" AND source_id = "+sourceID+" AND file_name = '"+currFile.getName()+"' AND meter_sn = '"+fileData.currConcSN+"' AND frequency = "+frequency;
+											ResultSet fileExistsQuery = mySQLStatement.executeQuery(fileExistsSQL);
+											if (fileExistsQuery.next()==false){
+
+												DataFile dataFile = new DataFile();
+												dataFile.siteID = siteID;
+												dataFile.sourceID = sourceID;
+												dataFile.fileName = currFile.getName().toString();
+												dataFile.file = currFile;
+												dataFile.frequency = frequency;
+												dataFile.meterSerial = fileData.currConcSN;
+												dataFile.sourceType = sourceType;
+												dataFile.measurementType = measurementType;
+
+												for (int k=0;k<fileData.currConcPhaseData[j].length;k++){
+													dataFile.dataList.add(new DataPoint(fileData.currConcDateData.get(k),fileData.currConcPhaseData[j][k]));
+												}
+
+												dataFiles.add(dataFile);
+
+											}
+											else{
+												//fileIssueList.add(new String[] {currFile.getName(),"FileAlreadyExists",""});
+												logWindow.println("Ignored file "+currFile.getName()+". This file already exists for source "+sourceID+" at site "+siteID+".");	
+											}
+											fileExistsQuery.close();
+										}
+										else{
+											sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"SourceWriteError",phNames[j],""});
+											throw new FatalIssueException("Ignored file "+currFile.getName()+". Could not match or create new source with name '"+phNames[j]+"'");
+										}
+									}
+								}
+								else{ //column count mismatch
+									fileIssueList.add(new FileIssue(currFile,"PHColMismatch",""));
+									throw new FatalIssueException("Ignored file "+currFile.getName()+". Column count mismatch between wHeader and phData");
+								}
+							}
+							else{ // row count mismatch
+								fileIssueList.add(new FileIssue(currFile,"PHRowMismatch",""));
+								throw new FatalIssueException("Ignored file "+currFile.getName()+". Row count mismatch between concDates and phData");
+							}
+
+							boolean legitimateHeaders = true;
+							//check circuit data
+							if (fileData.currCTModData[0].length==fileData.currConcDateData.size()){ //check same number of rows
+								//Do CT channels
+								//build Channel Names Array
+								String[] ctModuleSNs = new String[fileData.currCTModHeaders.size()*6];
+								String[] ctNames = new String[fileData.currCTModHeaders.size()*6];
+								for (int c=0;c<fileData.currCTModHeaders.size();c++){ //CYCLES ONCE FOR EACH CT BLOCK (GROUP OF 6)
+									String[] ctNameParts= fileData.currCTModHeaders.get(c)[3].split(",");
+									for (int d=0;d<6;d++){
+										String tempCTChName = ctNameParts[d];
+										//sorts out dodgy headers and blank columns etc.
+										if (tempCTChName.matches("^[\\w\\s\\-\\?\\+\\&\\(\\)\\/]{1,16}$")==false){ //could be error or legitimately blank or corrupted header
+											//search for a legitimate header
+											String headerQuerySQL = "SELECT ct_ch_names FROM header_log WHERE date_time = (SELECT MAX(date_time) FROM header_log WHERE date_time <= '"+dateFormatter.format(fileData.currConcDateData.get(0))+"' AND site_id = "+siteID+") AND site_id = "+siteID;
+											ResultSet lastHeaderRS = mySQLStatement.executeQuery(headerQuerySQL);
+											if (lastHeaderRS.next() && lastHeaderRS.getString("ct_ch_names").split(",").length == (fileData.currCTModHeaders.size()*6)){ // if found something and same number of channels
+												String previousName = lastHeaderRS.getString("ct_ch_names").split(",")[c*6+d];
+												if(previousName.matches("^[\\w\\s\\-\\?\\+\\&\\(\\)\\/]{1,16}$")){
+													tempCTChName = previousName;
+													legitimateHeaders = false;
+												}
+												else{ //if name is still bad
+													sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"InvalidSourceName",tempCTChName,""});
+													throw new FatalIssueException("Ignored file "+currFile.getName()+". Source name '"+tempCTChName+"' is invalid.\r\n");
+												}
+											}
+											else{//if nothing relevant in database
+												sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"InvalidSourceName",tempCTChName,""});
+												throw new FatalIssueException("Ignored file "+currFile.getName()+". Source name '"+tempCTChName+"' is invalid.\r\n");
+											}
+											lastHeaderRS.close();
+										}
+
+
+										//test that name does not already exist in Wireless Channel Name List
+										String fixedCTChName = tempCTChName;
+										int duplicateCounter = 0;
+										while (tempCTChName.matches("^[\\w\\s\\-\\?\\+\\&\\(\\)\\/]{1,16}$") && Arrays.asList(ctNames).contains(tempCTChName)){ //if ctChNames list already contains ctChName
+											duplicateCounter++;
+											tempCTChName = fixedCTChName + "("+duplicateCounter+")";
+										}
+
+										if (duplicateCounter>0){ //if current channel is a duplicate
+											sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"DuplicateCTChName",ctNameParts[d],""});
+											//non fatal, so no exception thrown
+										}
+
+
+										ctNames[c*6+d] = tempCTChName;
+										ctModuleSNs[c*6+d] = fileData.currCTModHeaders.get(c)[0];
+									}
+								}
+
+								if (fileData.currCTModData.length==ctNames.length){ //check same number of columns
+									for (int j=0;j<fileData.currCTModData.length;j++){
+										String fetchSourceIDSQL =  "SELECT source_id,source_type,measurement_type FROM sources WHERE source_name = '"+ctNames[j]+"' AND site_id = "+siteID;
+										ResultSet fetchSourceIDRS = mySQLStatement.executeQuery(fetchSourceIDSQL);
+
+										String sourceID = null;
+										String sourceType = "";
+										String measurementType = "";
+										if (fetchSourceIDRS.next()){
+											sourceID = fetchSourceIDRS.getString("source_id");
+											sourceType = fetchSourceIDRS.getString("source_type");
+											measurementType = fetchSourceIDRS.getString("measurement_type");
+											if (!sourceType.equals("Circuit")){
+												logWindow.println("Warning: Unexpected Source Type '"+sourceType+"' for source '"+ctNames[j]+"'. Expected 'Circuit'. Site: "+siteID+".");
+											}
+											if (!measurementType.equals("ActPower")){
+												logWindow.println("Warning: Measurement Type '"+measurementType+"' for Circuit '"+ctNames[j]+"' does not match data in file '"+currFile.getName()+"' at site: "+siteID+".");
+												//TODO write to issues file.
+											}
+										}
+										else{
+											logWindow.println("No matching Source ID found for source '"+ctNames[j]+"' at site "+siteID+". Adding now...");
+
+											sourceType = "Circuit";
+											measurementType = "ActPower";
+											try{
+												Source testSource = new Source(site,null,ctNames[j],sourceType,measurementType);
+												sourceID = Source.addSource(logWindow,showGUI,mySQLStatement, site, testSource,currFile.getName(), true);
+											}catch(SQLException sE){
+												sE.printStackTrace();
+												if (showGUI){JOptionPane.showMessageDialog(null,"Error occured while adding a new source: '"+ctNames[j]+"' for file '"+currFile.getName()+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);}
+												logWindow.println("Error occured while adding a new source: '"+ctNames[j]+"' for file '"+currFile.getName()+"'.\r\nSource will not be added at this point. File will be ignored.\r\n");
+											}
+										}
+										fetchSourceIDRS.close();
+										if (sourceID!=null){
+											String fileExistsSQL = "SELECT * FROM files WHERE site_id = "+siteID+" AND source_id = "+sourceID+" AND file_name = '"+currFile.getName()+"' AND meter_sn = '"+ctModuleSNs[j]+"' AND frequency = "+frequency;
+											ResultSet fileExistsQuery = mySQLStatement.executeQuery(fileExistsSQL);
+											if (fileExistsQuery.next()==false){
+
+												DataFile dataFile = new DataFile();
+												dataFile.siteID = siteID;
+												dataFile.sourceID = sourceID;
+												dataFile.fileName = currFile.getName().toString();
+												dataFile.file = currFile;
+												dataFile.frequency = frequency;
+												dataFile.meterSerial = ctModuleSNs[j];
+												dataFile.sourceType = sourceType;
+												dataFile.measurementType = measurementType;
+
+												for (int k=0;k<fileData.currCTModData[j].length;k++){
+													dataFile.dataList.add(new DataPoint(fileData.currConcDateData.get(k),fileData.currCTModData[j][k]));
+												}
+
+												dataFiles.add(dataFile);
+
+											}
+											else{
+												//fileIssueList.add(new String[] {currFile.getName(),"FileAlreadyExists",""});
+												logWindow.println("Ignored file "+currFile.getName()+". This file already exists for source "+sourceID+" at site "+siteID+".");	
+											}
+											fileExistsQuery.close();
+										}
+										else{
+											sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"SourceWriteError",ctNames[j],""});
+											throw new FatalIssueException("Ignored file "+currFile.getName()+". Could not match or create new source with name '"+ctNames[j]+"'");
+										}
+									}
+								}
+								else{ //column count mismatch
+									fileIssueList.add(new FileIssue(currFile,"CTColMismatch",""));
+									throw new FatalIssueException("Ignored file "+currFile.getName()+". Column count mismatch between wHeader and ctData");
+								}
+							}
+							else{ // row count mismatch
+								fileIssueList.add(new FileIssue(currFile,"CTRowMismatch",""));
+								throw new FatalIssueException("Ignored file "+currFile.getName()+". Row count mismatch between concDates and ctData");
+							}
+
+							//check wireless data
+							if (fileData.currWModData[0].length==fileData.currConcDateData.size()){ //check same number of rows
+								//Do wireless channels
+								//build Channel Names Array
+								String[] wChNames = new String[fileData.currWModHeaders.size()*6];
+								String[] wSensorSNs = new String[fileData.currWModHeaders.size()*6];
+								String[] wSensorChs = new String[fileData.currWModHeaders.size()*6];
+								for (int c=0;c<fileData.currWModHeaders.size();c++){ //c cycles through channels
+									String[] wChNameParts = fileData.currWModHeaders.get(c)[3].split(",");
+									String[] wSensorSNParts = fileData.currWModHeaders.get(c)[4].split(",");
+									String[] wSensorChParts = fileData.currWModHeaders.get(c)[5].split(",");
+									for (int d=0;d<6;d++){
+										String tempWChName = wChNameParts[d];
+										if (validateWChNames && (tempWChName.equals("[LEFT BLANK]") || tempWChName.matches("^[AGHLMTW][\\w\\s\\-\\(\\)\\/]{1,15}$")==false)){ //could be error or legitimately blank or corrupted header
+											//search for a legitimate header
+											String headerQuerySQL = "SELECT wl_ch_names FROM header_log WHERE date_time = (SELECT MAX(date_time) FROM header_log WHERE date_time <= '"+dateFormatter.format(fileData.currConcDateData.get(0))+"' AND site_id = "+siteID+") AND site_id = "+siteID;
+											ResultSet lastHeaderRS = mySQLStatement.executeQuery(headerQuerySQL);
+											if (lastHeaderRS.next() && lastHeaderRS.getString("wl_ch_names").split(",").length == (fileData.currWModHeaders.size()*6)){ // if found something and same number of channels
+												String previousName = lastHeaderRS.getString("wl_ch_names").split(",")[c*6+d];
+												if(previousName.equals("[LEFT BLANK]")==false && previousName.matches("^[\\w\\s\\-\\(\\)\\/]{1,16}$")){
+													tempWChName = previousName;
+													legitimateHeaders = false;
+												}
+												else{ //if name is still bad
+													if (previousName.equals("[LEFT BLANK]")){
+														if (tempWChName.equals("[LEFT BLANK]")==false){ //if title had an error, but header log was ok
+															tempWChName = previousName;
+															legitimateHeaders = false;
+														}
+														for (int k=0;k<fileData.currWModData[c*6+d].length;k++){ //search for any data in this column
+															if ((fileData.currWModData[c*6+d][k] == -123.456) == false){ //if any data other than blanks is found
+																sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"InvalidSourceName",tempWChName,""});
+																throw new FatalIssueException("Ignored file "+currFile.getName()+". Source name '"+tempWChName+"' is invalid.\r\n");
+															}
+														}
+														//if get to here, legitimately empty, but column will be ignored
+													}
+													else{
+														sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"InvalidSourceName",tempWChName,""});
+														throw new FatalIssueException("Ignored file "+currFile.getName()+". Source name '"+tempWChName+"' is invalid.\r\n");
+													}
+												}
+											}
+											else{//if nothing relevant in database
+												if (tempWChName.equals("[LEFT BLANK]")){
+													for (int k=0;k<fileData.currWModData[c*6+d].length;k++){ //search for any data in this column
+														if ((fileData.currWModData[c*6+d][k] == -123.456) == false){ //if any data other than blanks is found
+															sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"LeftBlankWithData",tempWChName,""});
+															//suggests corruption of some kind, so throw
+															throw new FatalIssueException("Ignored file "+currFile.getName()+". Source name '"+tempWChName+"' is invalid.\r\n");
+														}
+													}
+													//if get to here, legitimately empty, but column will be ignored
+												}
+												else{ //has name but name is invalid, stop all writing so that error can be dealt with
+													sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"InvalidSourceName",tempWChName,""});
+													throw new FatalIssueException("Ignored file "+currFile.getName()+". Source name '"+tempWChName+"' is invalid.\r\n");
+												}
+											}
+											lastHeaderRS.close();
+										}
+
+										//test that name does not already exist in Wireless Channel Name List
+										String fixedWChName = tempWChName;
+										int duplicateCounter = 0;
+										while (tempWChName.equals("[LEFT BLANK]")==false && Arrays.asList(wChNames).contains(tempWChName)){ //if wchNames list already contains wChName (ignoring [LEFT BLANK]s)
+											duplicateCounter++;
+											tempWChName = fixedWChName + "("+duplicateCounter+")";
+
+										}
+
+										if (duplicateCounter>0){ //if current channel is a duplicate
+											sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"DuplicateWChName",wChNameParts[d],""});
+											//non fatal, so no exception thrown
+										}
+
+										wChNames[c*6+d] = tempWChName;
+										wSensorSNs[c*6+d] = wSensorSNParts[d];
+										wSensorChs[c*6+d] = wSensorChParts[d];
+									}
+								}
+
+
+								if (fileData.currWModData.length==wChNames.length){ //check same number of columns
+									for (int j=0;j<fileData.currWModData.length;j++){
+										if (wChNames[j].equals("[LEFT BLANK]")==false){ //ignore [LEFT BLANK]s
+											String fetchSourceIDSQL =  "SELECT source_id,source_type,measurement_type FROM sources WHERE source_name = '"+wChNames[j]+"' AND site_id = "+siteID;
+											ResultSet fetchSourceIDRS = mySQLStatement.executeQuery(fetchSourceIDSQL);
+
+											String sourceID = null;
+											String sourceType = "";
+											String measurementType = "";
+											if (fetchSourceIDRS.next()){
+												sourceID = fetchSourceIDRS.getString("source_id");
+												sourceType = fetchSourceIDRS.getString("source_type");
+												measurementType = fetchSourceIDRS.getString("measurement_type");
+												if (!sourceType.equals(getSourceType(wChNames[j],wSensorChs[j]))){
+													logWindow.println("Warning: Source Type '"+sourceType+"' for source '"+wChNames[j]+"' contradicts naming convention. Site: "+siteID+".");
+												}
+												if (!measurementType.equals(getMeasurementType(wSensorChs[j]))){
+													logWindow.println("Warning: Measurement Type '"+measurementType+"' for source '"+wChNames[j]+"' does not match data in file '"+currFile.getName()+"' at site: "+siteID+".");
+													//TODO write to issues file.
+												}
+											}
+											else{
+												logWindow.println("No matching Source ID found for source '"+wChNames[j]+"' at site "+siteID+". Adding now...");
+
+												sourceType = getSourceType(wChNames[j],wSensorChs[j]);
+												measurementType = getMeasurementType(wSensorChs[j]);
+
+												if (sourceType.equals("") && showGUI){
+													String[] sourceTypes = new String[] {"Appliance","Gas","Humidity","Light","Motion","Temperature","Water"};
+													sourceType = (String)JOptionPane.showInputDialog(null, "Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+currFile.getName()+"'.\r\nPlease select the appropriate type from the list:", "Select Source Type", JOptionPane.PLAIN_MESSAGE, null, sourceTypes, "Appliance");
+													if(sourceType == null){sourceType = "";}
+												}
+												if (!sourceType.equals("") || !measurementType.equals("")){
+													Source testSource = new Source(site,null,wChNames[j],sourceType,measurementType);
+													sourceID = Source.addSource(logWindow,showGUI,mySQLStatement, site, testSource,currFile.getName(), true);
+												}
+												else{
+													if (showGUI){JOptionPane.showMessageDialog(null,"Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+currFile.getName()+"'.\r\nSource will not be added at this point. File will be ignored.","Error",JOptionPane.ERROR_MESSAGE);}
+													//determine appliance type
+													logWindow.println("Could not determine Source Type using available information: '"+wChNames[j]+"' and '"+wSensorChs[j]+"' in file '"+currFile.getName()+"'.\r\nSource will not be added at this point. File will be ignored.");
+												}
+											}
+											fetchSourceIDRS.close();
+											if (sourceID!=null){
+												String fileExistsSQL = "SELECT * FROM files WHERE site_id = "+siteID+" AND source_id = "+sourceID+" AND file_name = '"+currFile.getName()+"' AND meter_sn = '"+wSensorSNs[j]+"' AND frequency = "+frequency;
+												ResultSet fileExistsQuery = mySQLStatement.executeQuery(fileExistsSQL);
+												if (fileExistsQuery.next()==false){
+
+													DataFile dataFile = new DataFile();
+													dataFile.siteID = siteID;
+													dataFile.sourceID = sourceID;
+													dataFile.fileName = currFile.getName().toString();
+													dataFile.file = currFile;
+													dataFile.frequency = frequency;
+													dataFile.meterSerial = wSensorSNs[j];
+													dataFile.sourceType = sourceType;
+													dataFile.measurementType = measurementType;
+
+													for (int k=0;k<fileData.currWModData[j].length;k++){
+														dataFile.dataList.add(new DataPoint(fileData.currConcDateData.get(k),fileData.currWModData[j][k]));
+													}
+
+													dataFiles.add(dataFile);
+
+												}
+												else{
+													//fileIssueList.add(new String[] {currFile.getName(),"FileAlreadyExists",""});
+													logWindow.println("Ignored file "+currFile.getName()+". This file already exists for source "+sourceID+" at site "+siteID+".");	
+												}
+												fileExistsQuery.close();
+											}
+											else{
+												sourceIssueList.add(new String[] {currFile.getName(),new File(currFile.getParent()).getName(),"SourceWriteError",wChNames[j],""});
+												throw new FatalIssueException("Ignored file "+currFile.getName()+". Could not match or create new source with name '"+wChNames[j]+"'\r\n");
+											}
+										}
+										else{
+											// no need to do anything, legitimately empty data set
+										}
+									}
+								}
+								else{ //column count mismatch
+									fileIssueList.add(new FileIssue(currFile,"WColMismatch",""));
+									throw new FatalIssueException("Ignored file "+currFile.getName()+". Column count mismatch between wHeader and wData\r\n");
+								}
+							}
+							else{ // row count mismatch
+								fileIssueList.add(new FileIssue(currFile,"WRowMismatch",""));
+								throw new FatalIssueException("Ignored file "+currFile.getName()+". Row count mismatch between concDates and wData\r\n");
+							}
+
+							//send all files to file feeder
+							while( dataFiles.peek() != null ){
+								DataFile dataFile = dataFiles.poll();
+
+								fileFeeder.addFile(dataFile); //Send file to feeder
+							}
+
+							//if get to here file will have been written
+							//check to see that no file or source errors were thrown
+							if (legitimateHeaders){//if no fatal errors (these throw exceptions) and haven't messed around with the headers
+								//write header log to file
+								try{
+									writeHeaderLog(siteID,dateFormatter.format(fileData.currConcDateData.get(0)),fileData.currConcHeaders,fileData.currCTModHeaders,fileData.currWModHeaders);
+								}catch(SQLException sE){
+									//NON FATAL
+									sE.printStackTrace();
+									logWindow.println("Database error occurred while logging headers for file "+currFile.getName());
+								}
+							}
+						} catch(FatalIssueException fIE){
+							logWindow.println(fIE.getMessage());
+						}
+					}
+					else{
+						fileIssueList.add(new FileIssue(currFile,"NoFileFreq",""));
+						logWindow.println("Error: no file frequency found for file "+currFile.getName()+"\r\n");
+					}
+
+
+					//logWindow.println("Attempting to write "+ currFile.getName()+" to database...");
+					//dbWriter.writeDataToDatabase(logWindow,currFile.getName(),dbConn,installation_id,verbose,ALL_CONC_HEADERS.get(i),ALL_CT_MOD_HEADERS.get(i),ALL_W_MOD_HEADERS.get(i),ALL_CONC_DATE_DATA.get(i),ALL_CONC_PHASE_DATA.get(i),ALL_CT_MOD_DATA.get(i),ALL_W_MOD_DATA.get(i));
+					//pdcAdapter.adaptWireless(currFile.getName(),logWindow,mySQLConnection,siteID,ALL_CONC_DATE_DATA.get(i),ALL_W_MOD_HEADERS.get(i),ALL_W_MOD_DATA.get(i));
+
+					Date fileEndTime = new Date();
+					logWindow.println("Time to write "+currFile.getName()+" to database: "+getTimeString(fileEndTime.getTime()-fileStartTime.getTime())+"\r\n");
+				}
+				else{
+					fileIssueList.add(new FileIssue(currFile,"NoSiteMatch","Could not match concentrator number "+fileData.currConcSN+" to a Site"));
+					logWindow.println("Error occured while processing "+currFile.getName()+" to database: unable to determine a Site ID for this file.\r\n");
+				}
+			}
+
+		}
+		catch (SQLException sE) {
+			sE.printStackTrace();
+			logWindow.println("FATAL DB ERROR OCCURRED, ISSUE WILL NOT BE RECORDED IN DB. EXITING...\r\n");
+			logWindow.println(" Exiting...\r\n");
+		}
 	}	
 	
-	private boolean extractData(File fileToProcess,int filePointer) {
+	private FileData extractData(File fileToProcess,int filePointer) {
 		byte[] fileArray = null;
 		try {
 			fileArray = readBytesIntoArray(fileToProcess);
@@ -796,49 +803,37 @@ public class PDCValidator implements Runnable{
 						
 						if ((Integer.parseInt(concHeaderValues[5])-1) == ctModDataBlockHeaderValues.size() && ctModDataBlockHeaderValues.size() == ctModHeaderValues.size() && wModDataBlockHeaderValues.size() == wModHeaderValues.size() && wModDataBlockHeaderValues.size() >= 1 && wModDataBlockHeaderValues.size() <= 8){
 	 						
-	 						concSNList.add(filePointer,concHeaderValues[1]); //only do working files for now
+	 						
 	 						
 	 						double[][] ctModDataBlocks = makeCTModDataBlocks(fileArray,ctModHeaderValues,concDatesDataBlock.size()); //make CT Mod Data Table by reading data Blocks into it
 							
 							double[][] wModDataBlocks = makeWModDataBlocks(fileArray,wModHeaderValues,concDatesDataBlock.size()); //make W Mod Data Table by reading data Blocks into it
 							
-							ALL_CONC_HEADERS.add(filePointer,concHeaderValues);
-		
-							ALL_CT_MOD_HEADERS.add(filePointer,ctModHeaderValues);
 							
-							ALL_W_MOD_HEADERS.add(filePointer,wModHeaderValues);
+							FileData fileData = new FileData(concHeaderValues,ctModHeaderValues,wModHeaderValues,concDatesDataBlock,concPhasesDataBlock,ctModDataBlocks,wModDataBlocks,concHeaderValues[1],true);
 							
-							ALL_CONC_DATE_DATA.add(filePointer,concDatesDataBlock);
-							
-							ALL_CONC_PHASE_DATA.add(filePointer,concPhasesDataBlock);
-							
-							ALL_CT_MOD_DATA.add(filePointer,ctModDataBlocks);
-							
-							ALL_W_MOD_DATA.add(filePointer,wModDataBlocks);
-							
-							return true;
-						
+							return fileData;
 						}
 						else{
 							logWindow.println("Missing module data blocks or headers from file: "+fileList.get(filePointer).getName()+". This file will be ignored.");
 							logWindow.println((Integer.parseInt(concHeaderValues[5])-1)+" "+ctModDataBlockHeaderValues.size());
 							fileIssueList.add(new FileIssue(fileList.get(filePointer),"ModData",""));
 							fileList.remove(filePointer);
-							return false;
+							return new FileData(null,null,null,null,null,null,null,null,true);
 						}
 					}
 					else{
 						logWindow.println("Corrupted or missing concentrator data blocks in file: "+fileList.get(filePointer).getName()+". This file will be ignored.");
 						fileIssueList.add(new FileIssue(fileList.get(filePointer),"ConcData",""));
 						fileList.remove(filePointer);
-						return false;
+						return new FileData(null,null,null,null,null,null,null,null,true);
 					}
 				}
 				else {
 					logWindow.println("File: "+fileList.get(filePointer).getName()+" is missing Headers. This file will be ignored. ");
 					fileIssueList.add(new FileIssue(fileList.get(filePointer),"MissHead",""));
 					fileList.remove(filePointer);
-					return false;
+					return new FileData(null,null,null,null,null,null,null,null,true);
 				}
             }
 			else {
@@ -846,14 +841,14 @@ public class PDCValidator implements Runnable{
 				logWindow.println("Ignored corrupted file: "+fileList.get(filePointer).getName());
 				fileIssueList.add(new FileIssue(fileList.get(filePointer),"Corrupt",""));
 				fileList.remove(filePointer);
-				return false;
+				return new FileData(null,null,null,null,null,null,null,null,true);
 			}
 		}   
 		else{
 			logWindow.println("Ignored empty file "+fileList.get(filePointer).getName());
 			fileIssueList.add(new FileIssue(fileList.get(filePointer),"Empty",""));
 			fileList.remove(filePointer);
-			return false;
+			return new FileData(null,null,null,null,null,null,null,null,true);
 		}
 	}
 	
@@ -1839,11 +1834,11 @@ public class PDCValidator implements Runnable{
 				else { // current header is different to subsequent header
 					//shift the sub_period_id of all subsequent headers
 					String shiftSubPeriodsSQL = "UPDATE header_log SET sub_period_id = sub_period_id + 1 WHERE site_id = "+siteID+" AND sub_period_id >= "+subs_sub_period_id+"";
-					System.out.println(shiftSubPeriodsSQL);					
+					//System.out.println(shiftSubPeriodsSQL);					
 					header_statement.executeUpdate(shiftSubPeriodsSQL);
 
 					String insertHeaderSQL = "INSERT INTO header_log (site_id,sub_period_id,date_time,conc_name,conc_sn,conc_period,conc_nbmod,conc_version,conc_winter,ct_sns,ct_versions,ct_ch_names,ct_muls,ct_divs,ct_phases,wl_sn,wl_version,wl_ch_names,wl_sensor_sns,wl_sensor_chs) VALUES("+siteID+","+subs_sub_period_id+",'"+formStartDateTime+"','"+headerArray[0]+"','"+headerArray[1]+"','"+headerArray[2]+"','"+headerArray[3]+"','"+headerArray[4]+"','"+headerArray[5]+"','"+headerArray[6]+"','"+headerArray[7]+"','"+headerArray[8]+"','"+headerArray[9]+"','"+headerArray[10]+"','"+headerArray[11]+"','"+headerArray[12]+"','"+headerArray[13]+"','"+headerArray[14]+"','"+headerArray[15]+"','"+headerArray[16]+"')";
-					System.out.println(insertHeaderSQL);	
+					//System.out.println(insertHeaderSQL);	
 					header_statement.executeUpdate(insertHeaderSQL);
 				}
 			}

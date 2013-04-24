@@ -80,7 +80,7 @@ public class PDCTextFileWriter {
 		dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		timeFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		try {
-			System.out.println(concDatesDataBlock.size()+" "+ctModDataBlocks.length);
+			//System.out.println(concDatesDataBlock.size()+" "+ctModDataBlocks.length);
 			for (int j=0;j<concDatesDataBlock.size();j++){
 				outputStream.write("\r\n");
             	outputStream.write(dateFormatter.format(concDatesDataBlock.get(j))+",");
