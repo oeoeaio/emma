@@ -1,7 +1,6 @@
 package issueManagement;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 
 public class MissingFiller {
 	
@@ -9,6 +8,7 @@ public class MissingFiller {
 	
 	MissingFiller(Connection dbConn){
 		this.dbConn = dbConn;
+		System.out.println(this.dbConn.toString());
 		
 	}
 	

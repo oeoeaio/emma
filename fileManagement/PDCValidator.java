@@ -1786,15 +1786,15 @@ public class PDCValidator implements Runnable{
 
 				// check to see if subsequent header is the same as this one, if so shift date, if not, add new record
 				headerCheckSQL =  "SELECT * FROM header_log WHERE date_time = (SELECT MIN(date_time) FROM header_log WHERE date_time > '"+formStartDateTime+"' AND site_id = "+siteID+") AND site_id = "+siteID;
-				headerCheckRS = header_statement.executeQuery(headerCheckSQL);
+				ResultSet headerCheckAfterRS = header_statement.executeQuery(headerCheckSQL);
 				//System.out.println(headerCheckSQL);
 
-				if (headerCheckRS.next()){ //if a header with a date_time after the start of the current file in in the database
-					headerArray_CHECK = new String[] {headerCheckRS.getString("conc_name"),headerCheckRS.getString("conc_sn"),headerCheckRS.getString("conc_period"),headerCheckRS.getString("conc_nbmod"),headerCheckRS.getString("conc_version"),headerCheckRS.getString("conc_winter"),headerCheckRS.getString("ct_sns"),headerCheckRS.getString("ct_versions"),headerCheckRS.getString("ct_ch_names"),headerCheckRS.getString("ct_muls"),headerCheckRS.getString("ct_divs"),headerCheckRS.getString("ct_phases"),headerCheckRS.getString("wl_sn"),headerCheckRS.getString("wl_version"),headerCheckRS.getString("wl_ch_names"),headerCheckRS.getString("wl_sensor_sns"),headerCheckRS.getString("wl_sensor_chs")};
-					int subs_sub_period_id = headerCheckRS.getInt("sub_period_id");
+				if (headerCheckAfterRS.next()){ //if a header with a date_time after the start of the current file in in the database
+					headerArray_CHECK = new String[] {headerCheckAfterRS.getString("conc_name"),headerCheckAfterRS.getString("conc_sn"),headerCheckAfterRS.getString("conc_period"),headerCheckAfterRS.getString("conc_nbmod"),headerCheckAfterRS.getString("conc_version"),headerCheckAfterRS.getString("conc_winter"),headerCheckAfterRS.getString("ct_sns"),headerCheckAfterRS.getString("ct_versions"),headerCheckAfterRS.getString("ct_ch_names"),headerCheckAfterRS.getString("ct_muls"),headerCheckAfterRS.getString("ct_divs"),headerCheckAfterRS.getString("ct_phases"),headerCheckAfterRS.getString("wl_sn"),headerCheckAfterRS.getString("wl_version"),headerCheckAfterRS.getString("wl_ch_names"),headerCheckAfterRS.getString("wl_sensor_sns"),headerCheckAfterRS.getString("wl_sensor_chs")};
+					int subs_sub_period_id = headerCheckAfterRS.getInt("sub_period_id");
 					if (Arrays.equals(headerArray, headerArray_CHECK)){ //
 						//shift date of header already in database so that is covers the data within the current file as well 
-						String subs_date_time = headerCheckRS.getTimestamp("date_time").toString().split("[.]")[0];
+						String subs_date_time = headerCheckAfterRS.getTimestamp("date_time").toString().split("[.]")[0];
 						String updateHeaderSQL = "UPDATE header_log SET date_time = '"+formStartDateTime+"' WHERE site_id = "+siteID+" AND sub_period_id = "+subs_sub_period_id+" AND date_time = '"+subs_date_time+"'";
 						//System.out.println(updateHeaderSQL);
 						header_statement.executeUpdate(updateHeaderSQL);
@@ -1815,18 +1815,18 @@ public class PDCValidator implements Runnable{
 					//System.out.println(insertHeaderSQL);
 					header_statement.executeUpdate(insertHeaderSQL);
 				}
-				headerCheckRS.close();
+				headerCheckAfterRS.close();
 			}
 		}
 		else { // if no records dated prior or equal to the start of the current file in in the database
 			headerCheckSQL =  "SELECT * FROM header_log WHERE date_time = (SELECT MIN(date_time) FROM header_log WHERE date_time > '"+formStartDateTime+"' AND site_id = "+siteID+") AND site_id = "+siteID;
-			headerCheckRS = header_statement.executeQuery(headerCheckSQL);
-			if (headerCheckRS.next()){ //if a header with a date_time after the start of the current file in in the database
-				String[] headerArray_CHECK = new String[] {headerCheckRS.getString("conc_name"),headerCheckRS.getString("conc_sn"),headerCheckRS.getString("conc_period"),headerCheckRS.getString("conc_nbmod"),headerCheckRS.getString("conc_version"),headerCheckRS.getString("conc_winter"),headerCheckRS.getString("ct_sns"),headerCheckRS.getString("ct_versions"),headerCheckRS.getString("ct_ch_names"),headerCheckRS.getString("ct_muls"),headerCheckRS.getString("ct_divs"),headerCheckRS.getString("ct_phases"),headerCheckRS.getString("wl_sn"),headerCheckRS.getString("wl_version"),headerCheckRS.getString("wl_ch_names"),headerCheckRS.getString("wl_sensor_sns"),headerCheckRS.getString("wl_sensor_chs")};
-				int subs_sub_period_id = headerCheckRS.getInt("sub_period_id");
+			ResultSet headerCheckAfterRS = header_statement.executeQuery(headerCheckSQL);
+			if (headerCheckAfterRS.next()){ //if a header with a date_time after the start of the current file in in the database
+				String[] headerArray_CHECK = new String[] {headerCheckAfterRS.getString("conc_name"),headerCheckAfterRS.getString("conc_sn"),headerCheckAfterRS.getString("conc_period"),headerCheckAfterRS.getString("conc_nbmod"),headerCheckAfterRS.getString("conc_version"),headerCheckAfterRS.getString("conc_winter"),headerCheckAfterRS.getString("ct_sns"),headerCheckAfterRS.getString("ct_versions"),headerCheckAfterRS.getString("ct_ch_names"),headerCheckAfterRS.getString("ct_muls"),headerCheckAfterRS.getString("ct_divs"),headerCheckAfterRS.getString("ct_phases"),headerCheckAfterRS.getString("wl_sn"),headerCheckAfterRS.getString("wl_version"),headerCheckAfterRS.getString("wl_ch_names"),headerCheckAfterRS.getString("wl_sensor_sns"),headerCheckAfterRS.getString("wl_sensor_chs")};
+				int subs_sub_period_id = headerCheckAfterRS.getInt("sub_period_id");
 				if (Arrays.equals(headerArray, headerArray_CHECK)){ //
 					//shift date of header already in database so that is covers the data within the current file as well 
-					String subs_date_time = headerCheckRS.getTimestamp("date_time").toString().split("[.]")[0];
+					String subs_date_time = headerCheckAfterRS.getTimestamp("date_time").toString().split("[.]")[0];
 					String updateHeaderSQL = "UPDATE header_log SET date_time = '"+formStartDateTime+"' WHERE site_id = "+siteID+" AND sub_period_id = "+subs_sub_period_id+" AND date_time = '"+subs_date_time;
 					//System.out.println(updateHeaderSQL);	
 					header_statement.executeUpdate(updateHeaderSQL);
@@ -1847,7 +1847,7 @@ public class PDCValidator implements Runnable{
 				//System.out.println(insertHeaderSQL);
 				header_statement.executeUpdate(insertHeaderSQL);
 			}
-			headerCheckRS.close();
+			headerCheckAfterRS.close();
 		}
 		headerCheckRS.close();
 	}

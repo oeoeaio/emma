@@ -2,6 +2,7 @@ package issueManagement;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 
@@ -40,7 +41,15 @@ public class MissingFetcher implements Runnable{
 				"AND site_id = " + siteID + " " +
 				"AND source_id = " + sourceID + " " +
 				"GROUP BY issue_id,issues.site_id,issues.source_id,start_date,end_date";
-		ResultSet gapsRS = dbConn.createStatement().executeQuery(selectGapsSQL);
+		try{
+			ResultSet gapsRS = dbConn.createStatement().executeQuery(selectGapsSQL);
+			if (gapsRS.next()){
+				
+			}
+		}
+		catch(SQLException sE){
+			sE.printStackTrace();
+		}
 		
 	}
 }
