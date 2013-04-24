@@ -90,6 +90,7 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 	
 	SiteNotFoundWindow(Connection dbConn,LogWindow logWindow){
 		this.dbConn = dbConn;
+		this.logWindow = logWindow;
 	}
 	
 	void buildGUI(String siteName){
@@ -249,7 +250,9 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 				Site testSite = new Site(null,o2SiteName.getText(),o2Concentrator.getText(),o2GivenName.getText(),o2Surname.getText(),o2Suburb.getText(),o2State.getText());
 				if (testSite.isValid()){
 					try{
-						dbConn.createStatement().executeUpdate("INSERT INTO sites (site_name,concentrator,given_name,surname,suburb,state) VALUES("+(testSite.getSiteName().equals("")?"NULL":"'"+testSite.getSiteName()+"'")+","+(testSite.getConcentrator().equals("")?"NULL":"'"+testSite.getConcentrator()+"'")+","+(testSite.getGivenName().equals("")?"NULL":"'"+testSite.getGivenName()+"'")+","+(testSite.getSurname().equals("")?"NULL":"'"+testSite.getSurname()+"'")+","+(testSite.getSuburb().equals("")?"NULL":"'"+testSite.getSuburb()+"'")+","+(testSite.getState().equals("")?"NULL":"'"+testSite.getState()+"'"));
+						String addNewSiteSQL = "INSERT INTO sites (site_name,concentrator,given_name,surname,suburb,state) VALUES("+(testSite.getSiteName().equals("")?"NULL":"'"+testSite.getSiteName()+"'")+","+(testSite.getConcentrator().equals("")?"NULL":"'"+testSite.getConcentrator()+"'")+","+(testSite.getGivenName().equals("")?"NULL":"'"+testSite.getGivenName()+"'")+","+(testSite.getSurname().equals("")?"NULL":"'"+testSite.getSurname()+"'")+","+(testSite.getSuburb().equals("")?"NULL":"'"+testSite.getSuburb()+"'")+","+(testSite.getState().equals("")?"NULL":"'"+testSite.getState()+"'")+")";
+						System.out.println(addNewSiteSQL);
+						dbConn.createStatement().executeUpdate(addNewSiteSQL);
 						logWindow.println("Added new site with name '"+testSite.getSiteName()+"'.");
 						ResultSet new_source_id = dbConn.createStatement().executeQuery("SELECT LAST_INSERT_ID() AS current_id"); //returns new id
 						new_source_id.next();
@@ -259,6 +262,7 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 							submitButton.notify();
 						}
 					}catch(SQLException sE){
+						sE.printStackTrace();
 						logWindow.println("Failed to add new site with name '"+testSite.getSiteName()+"'.\r\nProcessing of this file will be terminated for the time being.");
 						newSite = null;
 					}
