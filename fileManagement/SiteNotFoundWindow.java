@@ -45,12 +45,16 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 	JPanel o1InputPanel = new JPanel(new GridLayout(0,2));
 	JLabel o1SiteNameL = new JLabel("Site");
 	JLabel o1ConcentratorL = new JLabel("Concentrator:");
-	JLabel o1GivenNameL = new JLabel("Given Name");
+	JLabel o1StartDateL = new JLabel("Start Date:");
+	JLabel o1EndDateL = new JLabel("End Date:");
+	JLabel o1GivenNameL = new JLabel("Given Name:");
 	JLabel o1SurnameL = new JLabel("Surname:");
 	JLabel o1SuburbL = new JLabel("Town/Suburb");
 	JLabel o1StateL = new JLabel("State");
 	JComboBox<String> o1SiteName = new JComboBox<String>();
 	JTextField o1Concentrator = new JTextField(10);
+	JTextField o1StartDate = new JTextField(10);
+	JTextField o1EndDate = new JTextField(10);
 	JTextField o1GivenName = new JTextField(10);
 	JTextField o1Surname = new JTextField(10);
 	JTextField o1Suburb = new JTextField(10);
@@ -62,12 +66,16 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 	JPanel o2InputPanel = new JPanel(new GridLayout(0,2));
 	JLabel o2SiteNameL = new JLabel("Site Name");
 	JLabel o2ConcentratorL = new JLabel("Concentrator:");
+	JLabel o2StartDateL = new JLabel("Start Date:");
+	JLabel o2EndDateL = new JLabel("End Date:");
 	JLabel o2GivenNameL = new JLabel("Given Name");
 	JLabel o2SurnameL = new JLabel("Surname:");
 	JLabel o2SuburbL = new JLabel("Town/Suburb");
 	JLabel o2StateL = new JLabel("State");
 	JTextField o2SiteName = new JTextField(10);
 	JTextField o2Concentrator = new JTextField(10);
+	JTextField o2StartDate = new JTextField(10);
+	JTextField o2EndDate = new JTextField(10);
 	JTextField o2GivenName = new JTextField(10);
 	JTextField o2Surname = new JTextField(10);
 	JTextField o2Suburb = new JTextField(10);
@@ -133,6 +141,10 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		o1InputPanel.add(o1SiteName);
 		o1InputPanel.add(o1ConcentratorL);
 		o1InputPanel.add(o1Concentrator);
+		o1InputPanel.add(o1StartDateL);
+		o1InputPanel.add(o1StartDate);
+		o1InputPanel.add(o1EndDateL);
+		o1InputPanel.add(o1EndDate);
 		o1InputPanel.add(o1GivenNameL);
 		o1InputPanel.add(o1GivenName);
 		o1InputPanel.add(o1SurnameL);
@@ -147,7 +159,7 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 			if (allSites.next()){
 				allSites.beforeFirst();
 				while(allSites.next()){
-					siteList.add(new Site(allSites.getString("site_id"),allSites.getString("site_name"),allSites.getString("concentrator"),allSites.getString("given_name"),allSites.getString("surname"),allSites.getString("suburb"),allSites.getString("state")));
+					siteList.add(new Site(allSites.getString("site_id"),allSites.getString("site_name"),allSites.getString("concentrator"),allSites.getString("start_date"),allSites.getString("end_date"),allSites.getString("given_name"),allSites.getString("surname"),allSites.getString("suburb"),allSites.getString("state")));
 					o1SiteName.addItem(allSites.getString("site_id")+": "+allSites.getString("site_name"));
 				}
 			}
@@ -163,6 +175,8 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 			o1SiteName.addItem("No Sites Found");
 		}
 		o1Concentrator.setEnabled(false);
+		o1StartDate.setEnabled(false);
+		o1EndDate.setEnabled(false);
 		o1GivenName.setEnabled(false);
 		o1Surname.setEnabled(false);
 		o1Suburb.setEnabled(false);
@@ -181,6 +195,10 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		o2InputPanel.add(o2SiteName);
 		o2InputPanel.add(o2ConcentratorL);
 		o2InputPanel.add(o2Concentrator);
+		o2InputPanel.add(o2StartDateL);
+		o2InputPanel.add(o2StartDate);
+		o2InputPanel.add(o2EndDateL);
+		o2InputPanel.add(o2EndDate);
 		o2InputPanel.add(o2GivenNameL);
 		o2InputPanel.add(o2GivenName);
 		o2InputPanel.add(o2SurnameL);
@@ -228,6 +246,8 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		if(aE.getSource().equals(o1SiteName) && siteList.size()>0){
 			Site selectedSite = siteList.get(o1SiteName.getSelectedIndex());
 			o1Concentrator.setText(selectedSite.getConcentrator());
+			o1StartDate.setText(selectedSite.getStartDate());
+			o1EndDate.setText(selectedSite.getEndDate());
 			o1GivenName.setText(selectedSite.getGivenName());
 			o1Surname.setText(selectedSite.getSurname());
 			o1Suburb.setText(selectedSite.getSuburb());
@@ -247,7 +267,7 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 					newSite = null;
 				}
 			} else if(o2Button.isSelected()){
-				Site testSite = new Site(null,o2SiteName.getText(),o2Concentrator.getText(),o2GivenName.getText(),o2Surname.getText(),o2Suburb.getText(),o2State.getText());
+				Site testSite = new Site(null,o2SiteName.getText(),o2Concentrator.getText(),o2StartDate.getText(),o2EndDate.getText(),o2GivenName.getText(),o2Surname.getText(),o2Suburb.getText(),o2State.getText());
 				if (testSite.isValid()){
 					try{
 						String addNewSiteSQL = "INSERT INTO sites (site_name,concentrator,given_name,surname,suburb,state) VALUES("+(testSite.getSiteName().equals("")?"NULL":"'"+testSite.getSiteName()+"'")+","+(testSite.getConcentrator().equals("")?"NULL":"'"+testSite.getConcentrator()+"'")+","+(testSite.getGivenName().equals("")?"NULL":"'"+testSite.getGivenName()+"'")+","+(testSite.getSurname().equals("")?"NULL":"'"+testSite.getSurname()+"'")+","+(testSite.getSuburb().equals("")?"NULL":"'"+testSite.getSuburb()+"'")+","+(testSite.getState().equals("")?"NULL":"'"+testSite.getState()+"'")+")";

@@ -77,17 +77,21 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 	JTextField sourceInput6 = new JTextField(20);
 	
 	//site Edit Panel
-	JPanel siteEditPanel = new JPanel(new GridLayout(8,2));
-	JLabel siteIDL = new JLabel("Site ID");
-	JLabel siteNameL = new JLabel("Site Name");
-	JLabel concentratorL = new JLabel("Concentrator No.");
-	JLabel givenNameL = new JLabel("Given Name");
+	JPanel siteEditPanel = new JPanel(new GridLayout(10,2));
+	JLabel siteIDL = new JLabel("Site ID:");
+	JLabel siteNameL = new JLabel("Site Name:");
+	JLabel concentratorL = new JLabel("Concentrator No.:");
+	JLabel startDateL = new JLabel("Start Date (yyyy-mm-dd):");
+	JLabel endDateL = new JLabel("End Date (yyyy-mm-dd):");
+	JLabel givenNameL = new JLabel("Given Name:");
 	JLabel surnameL = new JLabel("Surname:");
-	JLabel suburbL = new JLabel("Town/Suburb");
-	JLabel stateL = new JLabel("State");
+	JLabel suburbL = new JLabel("Town/Suburb:");
+	JLabel stateL = new JLabel("State:");
 	JTextField siteID = new JTextField(20);
 	JTextField siteName = new JTextField(20);
 	JTextField concentrator = new JTextField(20);
+	JTextField startDate = new JTextField(20);
+	JTextField endDate = new JTextField(20);
 	JTextField givenName = new JTextField(20);
 	JTextField surname = new JTextField(20);
 	JTextField suburb = new JTextField(20);
@@ -147,6 +151,10 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 		siteEditPanel.add(siteName);
 		siteEditPanel.add(concentratorL);
 		siteEditPanel.add(concentrator);
+		siteEditPanel.add(startDateL);
+		siteEditPanel.add(startDate);
+		siteEditPanel.add(endDateL);
+		siteEditPanel.add(endDate);
 		siteEditPanel.add(givenNameL);
 		siteEditPanel.add(givenName);
 		siteEditPanel.add(surnameL);
@@ -244,9 +252,9 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 					
 					int response = JOptionPane.showOptionDialog(this,siteEditPanel,"Adding new site (id: "+newSiteID+")",JOptionPane.YES_NO_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE,null,new String[] {"Done","Add Another","Cancel"},"Add Another");
 					if (response == JOptionPane.YES_OPTION){
-						Site newSite = new Site(newSiteID,siteName.getText(),concentrator.getText(),givenName.getText(),surname.getText(),suburb.getText(),state.getSelectedItem().toString());
+						Site newSite = new Site(newSiteID,siteName.getText(),concentrator.getText(),startDate.getText(),endDate.getText(),givenName.getText(),surname.getText(),suburb.getText(),state.getSelectedItem().toString());
 						if (newSite.isValid()){
-							String newSiteSQL = "UPDATE sites SET site_name="+(siteName.getText().equals("")?"NULL":"'"+siteName.getText()+"'")+",concentrator="+(concentrator.getText().equals("")?"NULL":"'"+concentrator.getText()+"'")+",given_name="+(givenName.getText().equals("")?"NULL":"'"+givenName.getText()+"'")+",surname="+(surname.getText().equals("")?"NULL":"'"+surname.getText()+"'")+",suburb="+(suburb.getText().equals("")?"NULL":"'"+suburb.getText()+"'")+",state='"+state.getSelectedItem()+"' WHERE site_id = "+newSiteID; //adds specified information into the database
+							String newSiteSQL = "UPDATE sites SET site_name="+(siteName.getText().equals("")?"NULL":"'"+siteName.getText()+"'")+",concentrator="+(concentrator.getText().equals("")?"NULL":"'"+concentrator.getText()+"'")+",start_date="+(startDate.getText().equals("")?"NULL":"'"+startDate.getText()+"'")+",end_date="+(endDate.getText().equals("")?"NULL":"'"+endDate.getText()+"'")+",given_name="+(givenName.getText().equals("")?"NULL":"'"+givenName.getText()+"'")+",surname="+(surname.getText().equals("")?"NULL":"'"+surname.getText()+"'")+",suburb="+(suburb.getText().equals("")?"NULL":"'"+suburb.getText()+"'")+",state='"+state.getSelectedItem()+"' WHERE site_id = "+newSiteID; //adds specified information into the database
 							MySQL_Statement.executeUpdate(newSiteSQL);
 						}
 						else{
@@ -255,9 +263,9 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 						}
 					}
 					else if(response == JOptionPane.NO_OPTION){
-						Site newSite = new Site(newSiteID,siteName.getText(),concentrator.getText(),givenName.getText(),surname.getText(),suburb.getText(),state.getSelectedItem().toString());
+						Site newSite = new Site(newSiteID,siteName.getText(),concentrator.getText(),startDate.getText(),endDate.getText(),givenName.getText(),surname.getText(),suburb.getText(),state.getSelectedItem().toString());
 						if (newSite.isValid()){
-							String newSiteSQL = "UPDATE sites SET site_name="+(siteName.getText().equals("")?"NULL":"'"+siteName.getText()+"'")+",concentrator="+(concentrator.getText().equals("")?"NULL":"'"+concentrator.getText()+"'")+",given_name="+(givenName.getText().equals("")?"NULL":"'"+givenName.getText()+"'")+",surname="+(surname.getText().equals("")?"NULL":"'"+surname.getText()+"'")+",suburb="+(suburb.getText().equals("")?"NULL":"'"+suburb.getText()+"'")+",state='"+state.getSelectedItem()+"' WHERE site_id = "+newSiteID; //adds specified information into the database
+							String newSiteSQL = "UPDATE sites SET site_name="+(siteName.getText().equals("")?"NULL":"'"+siteName.getText()+"'")+",concentrator="+(concentrator.getText().equals("")?"NULL":"'"+concentrator.getText()+"'")+",start_date="+(startDate.getText().equals("")?"NULL":"'"+startDate.getText()+"'")+",end_date="+(endDate.getText().equals("")?"NULL":"'"+endDate.getText()+"'")+",given_name="+(givenName.getText().equals("")?"NULL":"'"+givenName.getText()+"'")+",surname="+(surname.getText().equals("")?"NULL":"'"+surname.getText()+"'")+",suburb="+(suburb.getText().equals("")?"NULL":"'"+suburb.getText()+"'")+",state='"+state.getSelectedItem()+"' WHERE site_id = "+newSiteID; //adds specified information into the database
 							MySQL_Statement.executeUpdate(newSiteSQL);
 						
 							siteTable.updateList(dbConn);
@@ -266,6 +274,8 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 							siteID.setText("");
 							siteName.setText("");
 							concentrator.setText("");
+							startDate.setText("");
+							endDate.setText("");
 							givenName.setText("");
 							surname.setText("");
 							suburb.setText("");
@@ -288,6 +298,8 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 					siteID.setText("");
 					siteName.setText("");
 					concentrator.setText("");
+					startDate.setText("");
+					endDate.setText("");
 					givenName.setText("");
 					surname.setText("");
 					suburb.setText("");
@@ -305,19 +317,21 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 				try{
 					String selectedSite = siteTable.getValueAt(siteTable.getSelectedRow(),0).toString();
 					Statement MySQL_Statement = dbConn.createStatement();
-					ResultSet siteData = MySQL_Statement.executeQuery("SELECT site_name,concentrator,given_name,surname,suburb,state FROM sites WHERE site_id = "+selectedSite); //retrieves data pertaining to selected site
+					ResultSet siteData = MySQL_Statement.executeQuery("SELECT * FROM sites WHERE site_id = "+selectedSite); //retrieves data pertaining to selected site
 					
 					if (siteData.next()){
 						siteID.setText(selectedSite);
-						siteName.setText(siteData.getString(1));
-						concentrator.setText(siteData.getString(2));
-						givenName.setText(siteData.getString(3));
-						surname.setText(siteData.getString(4));
-						suburb.setText(siteData.getString(5));
-						state.setSelectedItem(siteData.getString(6));
+						siteName.setText(siteData.getString("site_name"));
+						concentrator.setText(siteData.getString("concentrator"));
+						startDate.setText(siteData.getString("start_date"));
+						endDate.setText(siteData.getString("end_date"));
+						givenName.setText(siteData.getString("given_name"));
+						surname.setText(siteData.getString("surname"));
+						suburb.setText(siteData.getString("suburb"));
+						state.setSelectedItem(siteData.getString("state"));
 						int response = JOptionPane.showConfirmDialog(this,siteEditPanel,"Editing site: ",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE);
 						if (response == JOptionPane.OK_OPTION){
-							String editSiteSQL = "UPDATE sites SET site_name="+(siteName.getText().equals("")?"NULL":"'"+siteName.getText()+"'")+",concentrator="+(concentrator.getText().equals("")?"NULL":"'"+concentrator.getText()+"'")+",given_name="+(givenName.getText().equals("")?"NULL":"'"+givenName.getText()+"'")+",surname="+(surname.getText().equals("")?"NULL":"'"+surname.getText()+"'")+",suburb="+(suburb.getText().equals("")?"NULL":"'"+suburb.getText()+"'")+",state='"+state.getSelectedItem()+"' WHERE site_id = "+selectedSite; //adds specified information into the database						
+							String editSiteSQL = "UPDATE sites SET site_name="+(siteName.getText().equals("")?"NULL":"'"+siteName.getText()+"'")+",concentrator="+(concentrator.getText().equals("")?"NULL":"'"+concentrator.getText()+"'")+",start_date="+(startDate.getText().equals("")?"NULL":"'"+startDate.getText()+"'")+",end_date="+(endDate.getText().equals("")?"NULL":"'"+endDate.getText()+"'")+",given_name="+(givenName.getText().equals("")?"NULL":"'"+givenName.getText()+"'")+",surname="+(surname.getText().equals("")?"NULL":"'"+surname.getText()+"'")+",suburb="+(suburb.getText().equals("")?"NULL":"'"+suburb.getText()+"'")+",state='"+state.getSelectedItem()+"' WHERE site_id = "+selectedSite; //adds specified information into the database						
 							MySQL_Statement.executeUpdate(editSiteSQL);
 							siteTable.updateList(dbConn);
 							//updateSites();
@@ -326,6 +340,8 @@ public class SiteManagementPanel extends JPanel implements ActionListener,ListSe
 						siteID.setText("");
 						siteName.setText("");
 						concentrator.setText("");
+						startDate.setText("");
+						endDate.setText("");
 						givenName.setText("");
 						surname.setText("");
 						suburb.setText("");

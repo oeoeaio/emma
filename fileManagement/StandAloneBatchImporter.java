@@ -69,7 +69,7 @@ public class StandAloneBatchImporter implements Runnable{
 				for (int i=0;i<batchInfo.size();i++){
 					try {
 						//create new test site and test source
-						Site testSite = new Site(null,batchInfo.get(i).data[0],null,batchInfo.get(i).data[1],batchInfo.get(i).data[2],batchInfo.get(i).data[3],batchInfo.get(i).data[4]);
+						Site testSite = new Site(null,batchInfo.get(i).data[0],null,null,null,batchInfo.get(i).data[1],batchInfo.get(i).data[2],batchInfo.get(i).data[3],batchInfo.get(i).data[4]);
 						Source testSource = new Source(testSite,null,batchInfo.get(i).data[5],batchInfo.get(i).data[6],batchInfo.get(i).data[7]);
 						DataFile dataFile = new DataFile();
 						//if test site and source do not match existing test site and source, write data for previous source
@@ -97,7 +97,7 @@ public class StandAloneBatchImporter implements Runnable{
 							if (existingSiteInfo.next()){
 								existingSiteID = existingSiteInfo.getString("site_id");
 								dataFile.siteID = existingSiteID;
-								existingSite = new Site(existingSiteID,existingSiteInfo.getString("site_name"),null,existingSiteInfo.getString("given_name"),existingSiteInfo.getString("surname"),existingSiteInfo.getString("suburb"),existingSiteInfo.getString("state"));
+								existingSite = new Site(existingSiteID,existingSiteInfo.getString("site_name"),null,null,null,existingSiteInfo.getString("given_name"),existingSiteInfo.getString("surname"),existingSiteInfo.getString("suburb"),existingSiteInfo.getString("state"));
 
 								if (testSite.equalTo(existingSite)==false){
 									logWindow.printString("WARNING: site "+testSite.getSiteName()+" mismatch. ");
@@ -127,7 +127,7 @@ public class StandAloneBatchImporter implements Runnable{
 								new_site_id.next();
 								existingSiteID = new_site_id.getString("current_id");
 								dataFile.siteID = existingSiteID;
-								existingSite = new Site(existingSiteID,testSite.getSiteName(),null,testSite.getGivenName(),testSite.getSurname(),testSite.getSuburb(),testSite.getState());
+								existingSite = new Site(existingSiteID,testSite.getSiteName(),null,null,null,testSite.getGivenName(),testSite.getSurname(),testSite.getSuburb(),testSite.getState());
 
 								logWindow.println("Added new site ID "+existingSiteID);
 							}

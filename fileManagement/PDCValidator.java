@@ -274,7 +274,7 @@ public class PDCValidator implements Runnable{
 					String fetchSiteIDSQL = "SELECT * FROM sites WHERE concentrator = '"+fileData.currConcSN+"' AND FROM_UNIXTIME("+(fileData.currConcDateData.get(0)/1000)+") BETWEEN start_date AND end_date";
 					ResultSet siteRS = dbConn.createStatement().executeQuery(fetchSiteIDSQL);
 					if (siteRS.next()){
-						site = new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("concentrator"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state"));
+						site = new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("concentrator"),siteRS.getString("start_date"),siteRS.getString("end_date"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state"));
 					}
 					else{
 						site = null;

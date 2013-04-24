@@ -78,7 +78,7 @@ public class CTValidator implements Runnable{
 							ResultSet checkSiteNameRS = dbConn.createStatement().executeQuery(checkSiteNameSQL);
 							
 							if (checkSiteNameRS.next()){
-								Site testSite = new Site(checkSiteNameRS.getString("site_id"),checkSiteNameRS.getString("site_name"),checkSiteNameRS.getString("concentrator"),checkSiteNameRS.getString("given_name"),checkSiteNameRS.getString("surname"),checkSiteNameRS.getString("suburb"),checkSiteNameRS.getString("state"));
+								Site testSite = new Site(checkSiteNameRS.getString("site_id"),checkSiteNameRS.getString("site_name"),checkSiteNameRS.getString("concentrator"),checkSiteNameRS.getString("start_date"),checkSiteNameRS.getString("end_date"),checkSiteNameRS.getString("given_name"),checkSiteNameRS.getString("surname"),checkSiteNameRS.getString("suburb"),checkSiteNameRS.getString("state"));
 								if (testSite.isValid()){
 									site = testSite;
 								}

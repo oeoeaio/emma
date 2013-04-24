@@ -106,7 +106,7 @@ public class SourceTable extends JTable{
 				if (sourceRS.next()){
 					sourceRS.beforeFirst(); //reset cursor position
 					while (sourceRS.next()){
-						sourceList.add(new Source((site==null?new Site(sourceRS.getString("site_id"),sourceRS.getString("site_name"),sourceRS.getString("concentrator"),sourceRS.getString("given_name"),sourceRS.getString("surname"),sourceRS.getString("suburb"),sourceRS.getString("state")):site),sourceRS.getString("source_id"),sourceRS.getString("source_name"),sourceRS.getString("source_type"),sourceRS.getString("measurement_type")));
+						sourceList.add(new Source((site==null?new Site(sourceRS.getString("site_id"),sourceRS.getString("site_name"),sourceRS.getString("concentrator"),sourceRS.getString("start_date"),sourceRS.getString("end_date"),sourceRS.getString("given_name"),sourceRS.getString("surname"),sourceRS.getString("suburb"),sourceRS.getString("state")):site),sourceRS.getString("source_id"),sourceRS.getString("source_name"),sourceRS.getString("source_type"),sourceRS.getString("measurement_type")));
 					}
 					SwingUtilities.invokeLater(new PopulateTable());
 				}
