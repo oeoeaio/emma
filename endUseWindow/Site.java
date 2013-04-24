@@ -5,14 +5,16 @@ import javax.swing.JOptionPane;
 public class Site {
 	String siteID;
 	String siteName;
+	String concentrator;
 	String givenName;
 	String surname;
 	String suburb;
 	String state;
 	
-	public Site(String siteID,String siteName,String givenName,String surname,String suburb,String state){
+	public Site(String siteID,String siteName,String concentrator,String givenName,String surname,String suburb,String state){
 		this.siteID = (siteID==null?"":siteID);
 		this.siteName = (siteName==null?"":siteName);
+		this.concentrator = (concentrator==null?"":concentrator);
 		this.givenName = (givenName==null?"":givenName);
 		this.surname = (surname==null?"":surname);
 		this.suburb = (suburb==null?"":suburb);
@@ -22,6 +24,7 @@ public class Site {
 	public boolean equalTo(Site otherSite){
 		//NOTE: IGNORES siteIDs. Only tests whether user added information is equal.
 		if (this.siteName.equals(otherSite.siteName)
+				&& this.concentrator.equals(otherSite.concentrator)
 				&& this.givenName.equals(otherSite.givenName)
 				&& this.surname.equals(otherSite.surname)
 				&& this.suburb.equals(otherSite.suburb)
@@ -37,26 +40,31 @@ public class Site {
 		boolean isValid = false;
 		//NOTE: IGNORES siteIDs. Only tests whether user added information is valid.
 		if (siteName.matches("^[\\w\\s]{1,10}$")){
-			if (givenName.matches("^[\\w\\s]{0,30}$")){
-				if (surname.matches("^[\\w\\s]{0,30}$")){
-					if (suburb.matches("^[\\w\\s]{0,30}$")){
-						if (state.matches("^VIC|TAS|ACT|NSW|QLD|NT|SA|WA$") || state.equals("")){
-							isValid = true;
-						}
+			if (concentrator.matches("^[\\d]{8}$")){
+				if (givenName.matches("^[\\w\\s]{0,30}$")){
+					if (surname.matches("^[\\w\\s]{0,30}$")){
+						if (suburb.matches("^[\\w\\s]{0,30}$")){
+							if (state.matches("^VIC|TAS|ACT|NSW|QLD|NT|SA|WA$") || state.equals("")){
+								isValid = true;
+							}
+							else{
+								JOptionPane.showMessageDialog(null,"The State provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
+							}
+						}	
 						else{
-							JOptionPane.showMessageDialog(null,"The State provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
+							JOptionPane.showMessageDialog(null,"The Suburb provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
 						}
-					}	
+					}
 					else{
-						JOptionPane.showMessageDialog(null,"The Suburb provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
+						JOptionPane.showMessageDialog(null,"The Surname provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
 					}
 				}
 				else{
-					JOptionPane.showMessageDialog(null,"The Surname provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
+					JOptionPane.showMessageDialog(null,"The Given Name provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
 				}
 			}
 			else{
-				JOptionPane.showMessageDialog(null,"The Given Name provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(null,"The Concentrator No. provided is invalid.","Site Information Invalid",JOptionPane.WARNING_MESSAGE);
 			}
 		}
 		else{
@@ -76,6 +84,10 @@ public class Site {
 	
 	public String getSiteName(){
 		return siteName;
+	}
+	
+	public String getConcentrator(){
+		return concentrator;
 	}
 	
 	public String getGivenName(){

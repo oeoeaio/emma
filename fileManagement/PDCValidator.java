@@ -24,15 +24,10 @@ import java.util.TimeZone;
 
 import javax.swing.JOptionPane;
 
-import endUseWindow.Appliance;
-import endUseWindow.Circuit;
-import endUseWindow.Light;
 import endUseWindow.LogWindow;
 import endUseWindow.MySQLConnection;
-import endUseWindow.Phase;
 import endUseWindow.Site;
 import endUseWindow.Source;
-import endUseWindow.Temperature;
 
 public class PDCValidator implements Runnable{
 	
@@ -147,7 +142,7 @@ public class PDCValidator implements Runnable{
 							String fetchSiteIDSQL = "SELECT * FROM sites WHERE concentrator = '"+concSNList.get(i)+"' AND FROM_UNIXTIME("+(ALL_CONC_DATE_DATA.get(i).get(0)/1000)+") BETWEEN start_date AND end_date";
 							ResultSet siteRS = dbConn.createStatement().executeQuery(fetchSiteIDSQL);
 							if (siteRS.next()){
-								siteList[i] = new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state"));
+								siteList[i] = new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("concentrator"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state"));
 							}
 							else{
 								siteList[i] = null;

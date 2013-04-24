@@ -45,7 +45,7 @@ public class SiteTable extends JTable{
 				if (siteRS.next()){
 					siteRS.beforeFirst(); //reset cursor position
 					while (siteRS.next()){
-						siteList.add(new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state")));
+						siteList.add(new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("concentrator"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state")));
 					}
 					SwingUtilities.invokeLater(new PopulateTable());
 				}
