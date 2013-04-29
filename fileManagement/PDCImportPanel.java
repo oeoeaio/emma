@@ -68,6 +68,8 @@ public class PDCImportPanel extends JPanel implements ActionListener{
 		fileButtonPanel.add(fileSelectButton);
 		fileButtonPanel.add(toFileCheckBox);
 		fileButtonPanel.add(toDatabaseCheckBox);
+		toFileCheckBox.addActionListener(this);
+		toDatabaseCheckBox.addActionListener(this);
 		fileButtonPanel.add(validateWChNames);
 		fileSelectButton.addActionListener(this);
 		fileSelectField.setEnabled(true);
