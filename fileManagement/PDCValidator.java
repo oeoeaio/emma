@@ -819,21 +819,21 @@ public class PDCValidator implements Runnable{
 							logWindow.println((Integer.parseInt(concHeaderValues[5])-1)+" "+ctModDataBlockHeaderValues.size());
 							fileIssueList.add(new FileIssue(fileList.get(filePointer),"ModData",""));
 							fileList.remove(filePointer);
-							return new FileData(null,null,null,null,null,null,null,null,true);
+							return new FileData(null,null,null,null,null,null,null,null,false);
 						}
 					}
 					else{
 						logWindow.println("Corrupted or missing concentrator data blocks in file: "+fileList.get(filePointer).getName()+". This file will be ignored.");
 						fileIssueList.add(new FileIssue(fileList.get(filePointer),"ConcData",""));
 						fileList.remove(filePointer);
-						return new FileData(null,null,null,null,null,null,null,null,true);
+						return new FileData(null,null,null,null,null,null,null,null,false);
 					}
 				}
 				else {
 					logWindow.println("File: "+fileList.get(filePointer).getName()+" is missing Headers. This file will be ignored. ");
 					fileIssueList.add(new FileIssue(fileList.get(filePointer),"MissHead",""));
 					fileList.remove(filePointer);
-					return new FileData(null,null,null,null,null,null,null,null,true);
+					return new FileData(null,null,null,null,null,null,null,null,false);
 				}
             }
 			else {
@@ -841,14 +841,14 @@ public class PDCValidator implements Runnable{
 				logWindow.println("Ignored corrupted file: "+fileList.get(filePointer).getName());
 				fileIssueList.add(new FileIssue(fileList.get(filePointer),"Corrupt",""));
 				fileList.remove(filePointer);
-				return new FileData(null,null,null,null,null,null,null,null,true);
+				return new FileData(null,null,null,null,null,null,null,null,false);
 			}
 		}   
 		else{
 			logWindow.println("Ignored empty file "+fileList.get(filePointer).getName());
 			fileIssueList.add(new FileIssue(fileList.get(filePointer),"Empty",""));
 			fileList.remove(filePointer);
-			return new FileData(null,null,null,null,null,null,null,null,true);
+			return new FileData(null,null,null,null,null,null,null,null,false);
 		}
 	}
 	
