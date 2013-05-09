@@ -133,6 +133,14 @@ public class DataWriter implements Runnable{
 					}
 				
 			}
+			try {
+				if (MySQL_Statement!=null){
+					MySQL_Statement.close();
+				}
+			}
+			catch (SQLException sE){
+				//Statement already closed
+			}
 			Date end = new Date();
 			totalWriteTime += end.getTime()-start.getTime();
 			
@@ -153,7 +161,5 @@ public class DataWriter implements Runnable{
 			logWindow.println("Error occured when connecting to database.");
 			sE.printStackTrace();
 		}
-		
-
 	}
 }

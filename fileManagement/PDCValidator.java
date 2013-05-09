@@ -272,7 +272,8 @@ public class PDCValidator implements Runnable{
 				Site site = null;
 				try{
 					String fetchSiteIDSQL = "SELECT * FROM sites WHERE concentrator = '"+fileData.currConcSN+"' AND FROM_UNIXTIME("+(fileData.currConcDateData.get(0)/1000)+") BETWEEN start_date AND end_date";
-					ResultSet siteRS = dbConn.createStatement().executeQuery(fetchSiteIDSQL);
+					Statement findSiteStatement = dbConn.createStatement();
+					ResultSet siteRS = findSiteStatement.executeQuery(fetchSiteIDSQL);
 					if (siteRS.next()){
 						site = new Site(siteRS.getString("site_id"),siteRS.getString("site_name"),siteRS.getString("concentrator"),siteRS.getString("start_date"),siteRS.getString("end_date"),siteRS.getString("given_name"),siteRS.getString("surname"),siteRS.getString("suburb"),siteRS.getString("state"));
 					}
@@ -280,6 +281,7 @@ public class PDCValidator implements Runnable{
 						site = null;
 					}
 					siteRS.close();
+					findSiteStatement.close();
 				} catch(SQLException sE){
 					sE.printStackTrace();
 					String errorMsg = "DB error while matching concentrator number to site.";
@@ -1771,9 +1773,9 @@ public class PDCValidator implements Runnable{
 		headerArray[15] = wSensorSNs; //WL Sensor SNs
 		headerArray[16] = wSensorChs; //WL Sensor Chs
 
-		Statement header_statement = dbConn.createStatement();
+		Statement headerStatement = dbConn.createStatement();
 		String headerCheckSQL =  "SELECT * FROM header_log WHERE date_time = (SELECT MAX(date_time) FROM header_log WHERE date_time <= '"+formStartDateTime+"' AND site_id = "+siteID+") AND site_id = "+siteID;
-		ResultSet headerCheckRS = header_statement.executeQuery(headerCheckSQL);
+		ResultSet headerCheckRS = headerStatement.executeQuery(headerCheckSQL);
 		//System.out.println(headerCheckSQL);
 		if (headerCheckRS.next()){ //if a header with a date preceding the start of the current file in in the database
 			String[] headerArray_CHECK = new String[] {headerCheckRS.getString("conc_name"),headerCheckRS.getString("conc_sn"),headerCheckRS.getString("conc_period"),headerCheckRS.getString("conc_nbmod"),headerCheckRS.getString("conc_version"),headerCheckRS.getString("conc_winter"),headerCheckRS.getString("ct_sns"),headerCheckRS.getString("ct_versions"),headerCheckRS.getString("ct_ch_names"),headerCheckRS.getString("ct_muls"),headerCheckRS.getString("ct_divs"),headerCheckRS.getString("ct_phases"),headerCheckRS.getString("wl_sn"),headerCheckRS.getString("wl_version"),headerCheckRS.getString("wl_ch_names"),headerCheckRS.getString("wl_sensor_sns"),headerCheckRS.getString("wl_sensor_chs")};
@@ -1786,7 +1788,7 @@ public class PDCValidator implements Runnable{
 
 				// check to see if subsequent header is the same as this one, if so shift date, if not, add new record
 				headerCheckSQL =  "SELECT * FROM header_log WHERE date_time = (SELECT MIN(date_time) FROM header_log WHERE date_time > '"+formStartDateTime+"' AND site_id = "+siteID+") AND site_id = "+siteID;
-				ResultSet headerCheckAfterRS = header_statement.executeQuery(headerCheckSQL);
+				ResultSet headerCheckAfterRS = headerStatement.executeQuery(headerCheckSQL);
 				//System.out.println(headerCheckSQL);
 
 				if (headerCheckAfterRS.next()){ //if a header with a date_time after the start of the current file in in the database
@@ -1797,30 +1799,30 @@ public class PDCValidator implements Runnable{
 						String subs_date_time = headerCheckAfterRS.getTimestamp("date_time").toString().split("[.]")[0];
 						String updateHeaderSQL = "UPDATE header_log SET date_time = '"+formStartDateTime+"' WHERE site_id = "+siteID+" AND sub_period_id = "+subs_sub_period_id+" AND date_time = '"+subs_date_time+"'";
 						//System.out.println(updateHeaderSQL);
-						header_statement.executeUpdate(updateHeaderSQL);
+						headerStatement.executeUpdate(updateHeaderSQL);
 					}
 					else { // current header is different to subsequent header
 						//shift the sub_period_id of all subsequent headers
 						String shiftSubPeriodsSQL = "UPDATE header_log SET sub_period_id = sub_period_id + 1 WHERE site_id = "+siteID+" AND sub_period_id >= "+subs_sub_period_id+"";
 						//System.out.println(shiftSubPeriodsSQL);					
-						header_statement.executeUpdate(shiftSubPeriodsSQL);
+						headerStatement.executeUpdate(shiftSubPeriodsSQL);
 
 						String insertHeaderSQL = "INSERT INTO header_log (site_id,sub_period_id,date_time,conc_name,conc_sn,conc_period,conc_nbmod,conc_version,conc_winter,ct_sns,ct_versions,ct_ch_names,ct_muls,ct_divs,ct_phases,wl_sn,wl_version,wl_ch_names,wl_sensor_sns,wl_sensor_chs) VALUES("+siteID+","+subs_sub_period_id+",'"+formStartDateTime+"','"+headerArray[0]+"','"+headerArray[1]+"','"+headerArray[2]+"','"+headerArray[3]+"','"+headerArray[4]+"','"+headerArray[5]+"','"+headerArray[6]+"','"+headerArray[7]+"','"+headerArray[8]+"','"+headerArray[9]+"','"+headerArray[10]+"','"+headerArray[11]+"','"+headerArray[12]+"','"+headerArray[13]+"','"+headerArray[14]+"','"+headerArray[15]+"','"+headerArray[16]+"')";
 						//System.out.println(insertHeaderSQL);	
-						header_statement.executeUpdate(insertHeaderSQL);
+						headerStatement.executeUpdate(insertHeaderSQL);
 					}
 				}
 				else{ //if no subsequent records exist for this installation
 					String insertHeaderSQL = "INSERT INTO header_log (site_id,sub_period_id,date_time,conc_name,conc_sn,conc_period,conc_nbmod,conc_version,conc_winter,ct_sns,ct_versions,ct_ch_names,ct_muls,ct_divs,ct_phases,wl_sn,wl_version,wl_ch_names,wl_sensor_sns,wl_sensor_chs) VALUES("+siteID+",(SELECT MAX(sub_period_id)+1 FROM (SELECT * FROM header_log) AS self WHERE site_id = "+siteID+"),'"+formStartDateTime+"','"+headerArray[0]+"','"+headerArray[1]+"','"+headerArray[2]+"','"+headerArray[3]+"','"+headerArray[4]+"','"+headerArray[5]+"','"+headerArray[6]+"','"+headerArray[7]+"','"+headerArray[8]+"','"+headerArray[9]+"','"+headerArray[10]+"','"+headerArray[11]+"','"+headerArray[12]+"','"+headerArray[13]+"','"+headerArray[14]+"','"+headerArray[15]+"','"+headerArray[16]+"')";
 					//System.out.println(insertHeaderSQL);
-					header_statement.executeUpdate(insertHeaderSQL);
+					headerStatement.executeUpdate(insertHeaderSQL);
 				}
 				headerCheckAfterRS.close();
 			}
 		}
 		else { // if no records dated prior or equal to the start of the current file in in the database
 			headerCheckSQL =  "SELECT * FROM header_log WHERE date_time = (SELECT MIN(date_time) FROM header_log WHERE date_time > '"+formStartDateTime+"' AND site_id = "+siteID+") AND site_id = "+siteID;
-			ResultSet headerCheckAfterRS = header_statement.executeQuery(headerCheckSQL);
+			ResultSet headerCheckAfterRS = headerStatement.executeQuery(headerCheckSQL);
 			if (headerCheckAfterRS.next()){ //if a header with a date_time after the start of the current file in in the database
 				String[] headerArray_CHECK = new String[] {headerCheckAfterRS.getString("conc_name"),headerCheckAfterRS.getString("conc_sn"),headerCheckAfterRS.getString("conc_period"),headerCheckAfterRS.getString("conc_nbmod"),headerCheckAfterRS.getString("conc_version"),headerCheckAfterRS.getString("conc_winter"),headerCheckAfterRS.getString("ct_sns"),headerCheckAfterRS.getString("ct_versions"),headerCheckAfterRS.getString("ct_ch_names"),headerCheckAfterRS.getString("ct_muls"),headerCheckAfterRS.getString("ct_divs"),headerCheckAfterRS.getString("ct_phases"),headerCheckAfterRS.getString("wl_sn"),headerCheckAfterRS.getString("wl_version"),headerCheckAfterRS.getString("wl_ch_names"),headerCheckAfterRS.getString("wl_sensor_sns"),headerCheckAfterRS.getString("wl_sensor_chs")};
 				int subs_sub_period_id = headerCheckAfterRS.getInt("sub_period_id");
@@ -1829,27 +1831,28 @@ public class PDCValidator implements Runnable{
 					String subs_date_time = headerCheckAfterRS.getTimestamp("date_time").toString().split("[.]")[0];
 					String updateHeaderSQL = "UPDATE header_log SET date_time = '"+formStartDateTime+"' WHERE site_id = "+siteID+" AND sub_period_id = "+subs_sub_period_id+" AND date_time = '"+subs_date_time;
 					//System.out.println(updateHeaderSQL);	
-					header_statement.executeUpdate(updateHeaderSQL);
+					headerStatement.executeUpdate(updateHeaderSQL);
 				}
 				else { // current header is different to subsequent header
 					//shift the sub_period_id of all subsequent headers
 					String shiftSubPeriodsSQL = "UPDATE header_log SET sub_period_id = sub_period_id + 1 WHERE site_id = "+siteID+" AND sub_period_id >= "+subs_sub_period_id+"";
 					//System.out.println(shiftSubPeriodsSQL);					
-					header_statement.executeUpdate(shiftSubPeriodsSQL);
+					headerStatement.executeUpdate(shiftSubPeriodsSQL);
 
 					String insertHeaderSQL = "INSERT INTO header_log (site_id,sub_period_id,date_time,conc_name,conc_sn,conc_period,conc_nbmod,conc_version,conc_winter,ct_sns,ct_versions,ct_ch_names,ct_muls,ct_divs,ct_phases,wl_sn,wl_version,wl_ch_names,wl_sensor_sns,wl_sensor_chs) VALUES("+siteID+","+subs_sub_period_id+",'"+formStartDateTime+"','"+headerArray[0]+"','"+headerArray[1]+"','"+headerArray[2]+"','"+headerArray[3]+"','"+headerArray[4]+"','"+headerArray[5]+"','"+headerArray[6]+"','"+headerArray[7]+"','"+headerArray[8]+"','"+headerArray[9]+"','"+headerArray[10]+"','"+headerArray[11]+"','"+headerArray[12]+"','"+headerArray[13]+"','"+headerArray[14]+"','"+headerArray[15]+"','"+headerArray[16]+"')";
 					//System.out.println(insertHeaderSQL);	
-					header_statement.executeUpdate(insertHeaderSQL);
+					headerStatement.executeUpdate(insertHeaderSQL);
 				}
 			}
 			else{ //if no records exist for this installation
 				String insertHeaderSQL = "INSERT INTO header_log (site_id,sub_period_id,date_time,conc_name,conc_sn,conc_period,conc_nbmod,conc_version,conc_winter,ct_sns,ct_versions,ct_ch_names,ct_muls,ct_divs,ct_phases,wl_sn,wl_version,wl_ch_names,wl_sensor_sns,wl_sensor_chs) VALUES("+siteID+",1,'"+formStartDateTime+"','"+headerArray[0]+"','"+headerArray[1]+"','"+headerArray[2]+"','"+headerArray[3]+"','"+headerArray[4]+"','"+headerArray[5]+"','"+headerArray[6]+"','"+headerArray[7]+"','"+headerArray[8]+"','"+headerArray[9]+"','"+headerArray[10]+"','"+headerArray[11]+"','"+headerArray[12]+"','"+headerArray[13]+"','"+headerArray[14]+"','"+headerArray[15]+"','"+headerArray[16]+"')";
 				//System.out.println(insertHeaderSQL);
-				header_statement.executeUpdate(insertHeaderSQL);
+				headerStatement.executeUpdate(insertHeaderSQL);
 			}
 			headerCheckAfterRS.close();
 		}
 		headerCheckRS.close();
+		headerStatement.close();
 	}
 	
 	private class FatalIssueException extends Exception{

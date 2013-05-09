@@ -64,6 +64,7 @@ public class FileFeeder implements Runnable{
 		dataWriterPoolThread.start();
 		logWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		try{
+			Statement FileExistsStatement = dbConn.createStatement();
 			Statement MySQL_Statement = dbConn.createStatement();
 			//DataFactorConverter dataFactorConverter = new DataFactorConverter();
 			while (moreFilesComing || !fileList.isEmpty()){ //if more data still to process or more data coming
@@ -116,7 +117,7 @@ public class FileFeeder implements Runnable{
 
 						try{
 							String fileExistsSQL = "SELECT * FROM files WHERE site_id = "+dataFile.siteID+" AND source_id = "+dataFile.sourceID+" AND file_name = '"+dataFile.fileName+"' AND meter_sn = '"+dataFile.meterSerial+"' AND frequency = "+dataFile.frequency;
-							ResultSet fileExistsQuery = dbConn.createStatement().executeQuery(fileExistsSQL);
+							ResultSet fileExistsQuery = FileExistsStatement.executeQuery(fileExistsSQL);
 							if (fileExistsQuery.next()==false){ //if no files with same site,source,filename,meterserial and frequency exist
 								String newFileSQL = "INSERT INTO files (site_id,source_id,file_name,meter_sn,frequency,start_date,end_date,folder_name,file_size,date_modified) VALUES("+dataFile.siteID+","+dataFile.sourceID+",'"+dataFile.fileName+"','"+dataFile.meterSerial+"',"+dataFile.frequency+","+(dataFile.startDate==null?"NULL":"'"+dataFile.startDate+"'")+","+(dataFile.endDate==null?"NULL":"'"+dataFile.endDate+"'")+",'"+new File(dataFile.file.getParent()).getName()+"',"+dataFile.file.length()+",'"+dateFormatter.format(dataFile.file.lastModified())+"')";
 								MySQL_Statement.executeUpdate(newFileSQL);
@@ -170,6 +171,8 @@ public class FileFeeder implements Runnable{
 					e.printStackTrace();
 				}
 			}
+			MySQL_Statement.close();
+			FileExistsStatement.close();
 		}catch(SQLException sE){
 			logWindow.println("Error occured when connecting to database. Writing Failed.");	
 		}
