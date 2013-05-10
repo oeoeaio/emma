@@ -145,6 +145,9 @@ public class PDCValidator implements Runnable{
 						if (fileData.validDataExtracted){
 							validateForDatabase(fileFeeder,fileList.get(i),fileData);
 						}
+						else{
+							i--;
+						}
 					}
 				}
 				
@@ -817,7 +820,7 @@ public class PDCValidator implements Runnable{
 							return fileData;
 						}
 						else{
-							logWindow.println("Missing module data blocks or headers from file: "+fileList.get(filePointer).getName()+". This file will be ignored.");
+							logWindow.println("Missing module data blocks or headers from file: "+fileList.get(filePointer).getName()+". This file will be ignored.\r\n");
 							logWindow.println((Integer.parseInt(concHeaderValues[5])-1)+" "+ctModDataBlockHeaderValues.size());
 							fileIssueList.add(new FileIssue(fileList.get(filePointer),"ModData",""));
 							fileList.remove(filePointer);
@@ -825,14 +828,14 @@ public class PDCValidator implements Runnable{
 						}
 					}
 					else{
-						logWindow.println("Corrupted or missing concentrator data blocks in file: "+fileList.get(filePointer).getName()+". This file will be ignored.");
+						logWindow.println("Corrupted or missing concentrator data blocks in file: "+fileList.get(filePointer).getName()+". This file will be ignored.\r\n");
 						fileIssueList.add(new FileIssue(fileList.get(filePointer),"ConcData",""));
 						fileList.remove(filePointer);
 						return new FileData(null,null,null,null,null,null,null,null,false);
 					}
 				}
 				else {
-					logWindow.println("File: "+fileList.get(filePointer).getName()+" is missing Headers. This file will be ignored. ");
+					logWindow.println("File: "+fileList.get(filePointer).getName()+" is missing Headers. This file will be ignored.\r\n");
 					fileIssueList.add(new FileIssue(fileList.get(filePointer),"MissHead",""));
 					fileList.remove(filePointer);
 					return new FileData(null,null,null,null,null,null,null,null,false);
@@ -840,14 +843,14 @@ public class PDCValidator implements Runnable{
             }
 			else {
 				logWindow.println(blocksOK[1]);
-				logWindow.println("Ignored corrupted file: "+fileList.get(filePointer).getName());
+				logWindow.println("Ignored corrupted file: "+fileList.get(filePointer).getName()+"\r\n");
 				fileIssueList.add(new FileIssue(fileList.get(filePointer),"Corrupt",""));
 				fileList.remove(filePointer);
 				return new FileData(null,null,null,null,null,null,null,null,false);
 			}
 		}   
 		else{
-			logWindow.println("Ignored empty file "+fileList.get(filePointer).getName());
+			logWindow.println("Ignored empty file "+fileList.get(filePointer).getName()+"\r\n");
 			fileIssueList.add(new FileIssue(fileList.get(filePointer),"Empty",""));
 			fileList.remove(filePointer);
 			return new FileData(null,null,null,null,null,null,null,null,false);
