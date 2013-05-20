@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -306,20 +305,6 @@ public class RawDataExport implements Runnable{
 		else{ //File not selected or invalid file
 			logWindow.println("No valid file selected.");
 		}
-	}
-	
-	boolean moreData(ArrayList<ResultSet> results){
-		boolean moreData = true;
-		try{
-			for (int i=0;i<results.size();i++){
-				if (results.get(i).next()==false){
-					moreData = false;
-				}
-			}
-		} catch(SQLException sE){
-			moreData = false;
-		}
-		return moreData;
 	}
 	
 	String getTimeString(long timeInMillis){
