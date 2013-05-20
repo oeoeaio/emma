@@ -262,7 +262,7 @@ public class RawDataExportPanel extends JPanel implements ItemListener,ActionLis
 				//sourceNames[i] = sourceTable.getValueAt(sourceTable.getSelectedRows()[i], 1).toString();
 			}
 			
-			long startDate = dateRange.get(startDateS.getSelectedIndex());
+			long startDate = dateRange.get(startDateS.getSelectedIndex())+60000;
 			long endDate = dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()+1);			
 			
 			LinkedList<long[]> customStartAndEndDates = new LinkedList<long[]>();
@@ -279,7 +279,7 @@ public class RawDataExportPanel extends JPanel implements ItemListener,ActionLis
 					//System.out.println(getFreqCountSQL);
 					//System.out.println(getFrequenciesSQL);
 					if (getFreqCountResults.next() && getFrequenciesResults.next()){
-						customStartAndEndDates.add(i,new long[] {startDate+60000,endDate});
+						customStartAndEndDates.add(i,new long[] {startDate,endDate});
 						frequencies.add(i,0);
 						if (getFreqCountResults.getInt("freqCount")!=1){
 							//String errorMsg = "<html>Multiple recording intervals found for source: "+selectedSources[i].getSourceName()+" (id: "+selectedSources[i].getSourceID()+")";

@@ -121,166 +121,178 @@ public class RawDataExport implements Runnable{
 						}
 					}
 					
-					int rowsRequired = (int)((endDate-startDate)/(1000*60*minFreq));
 					//System.out.println(1);
 					//System.out.println(sqlDateFormatter.format(startDate)+" "+sqlDateFormatter.format(endDate));
 					
-					Double[][] rawData = new Double [rowsRequired][sourceList.size()];
-					//Double[][] countData = new Double [rowsRequired][sourceList.size()];
-					long rowDates[] = new long[rowsRequired];
-					String rowDateStrings[] = new String[rowsRequired];
-	
-					Calendar rollDate = new GregorianCalendar();
-					rollDate.setTimeZone(TimeZone.getTimeZone("GMT+10"));
-					rollDate.setTimeInMillis(startDate);
+					long segmentStartDate = startDate;
 					
-					for (int i=0;i<rowDates.length;i++){
-						rollDate.add(Calendar.MINUTE, minFreq);
-						rowDates[i] = rollDate.getTimeInMillis();
-						rowDateStrings[i] = sqlDateFormatter.format(rowDates[i]);
-					}
-	
-					String blockString = "";
-					String groupByString = "";
-					blockString = "UNIX_TIMESTAMP(DATE(date_time)) AS blockDate_ts,HOUR(date_time) AS blockHour,MINUTE(date_time) AS blockMinute";
-					groupByString = "GROUP BY blockDate_ts,blockHour,blockMinute";
+					while(segmentStartDate < endDate){ //Process in blocks of 40320 (28 days of 1 min data) data points to avoid overloading memory for long data series
+						int rowsRequired = Math.min((int)((endDate-segmentStartDate)/(1000*60*minFreq))+1,28*1440);
+						long segmentEndDate = segmentStartDate + (long)(rowsRequired-1)*(60000*minFreq);
+						Date segmentStart = new Date();
+						logWindow.printString("Extracting Data between "+sqlDateFormatter.format(segmentStartDate)+" and "+sqlDateFormatter.format(segmentEndDate)+".....");
 					
-					/*if (samplePeriod == "Ten Minutely"){
-						blockString = "UNIX_TIMESTAMP(CASE WHEN HOUR(date_time)+MINUTE(date_time)/60 > 23+(5/6) THEN DATE(DATE_ADD(date_time,INTERVAL 1 HOUR)) ELSE DATE(date_time) END) AS blockDate_ts,CASE WHEN HOUR(date_time)+MINUTE(date_time)/60 > 23+(5/6) THEN 0 ELSE CASE WHEN MINUTE(date_time) > 50 THEN CEIL(HOUR(date_time)+MINUTE(date_time)/60) ELSE FLOOR(HOUR(date_time)+MINUTE(date_time)/60) END END AS blockHour,CASE WHEN MINUTE(date_time) > 50 THEN 0 ELSE CEIL(MINUTE(date_time)/10)*10 END AS blockMinute";
-						groupByString = "GROUP BY blockDate_ts,blockHour,blockMinute";
-					}
-					else if (samplePeriod.equals("Hourly")){
-						blockString = "UNIX_TIMESTAMP(CASE CEIL(HOUR(date_time)+MINUTE(date_time)/60) WHEN 24 THEN DATE(DATE_ADD(date_time,INTERVAL 1 HOUR)) ELSE DATE(date_time) END) AS blockDate_ts,CASE CEIL(HOUR(date_time)+MINUTE(date_time)/60) WHEN 24 THEN 0 ELSE CEIL(HOUR(date_time)+MINUTE(date_time)/60) END AS blockHour";
-						groupByString = "GROUP BY blockDate_ts,blockHour";
-					}
-					else if (samplePeriod.equals("Daily")){
-						blockString = "UNIX_TIMESTAMP(DATE(DATE_SUB(date_time, INTERVAL 1 MINUTE))) AS blockDate_ts";
-						groupByString = "GROUP BY blockDate_ts";
-					}
-					else if (samplePeriod.equals("Monthly")){
-						blockString = "UNIX_TIMESTAMP(STR_TO_DATE(DATE_FORMAT(DATE_SUB(date_time, INTERVAL 1 MINUTE),'%Y-%m-01'),'%Y-%m-%d')) AS blockDate_ts";
-						groupByString = "GROUP BY blockDate_ts";
-					}
-					else{
-						logWindow.println("ERROR: Sample period not recognised, channels will not be processed");
-					}*/
-	
-					if (blockString.equals("") == false && groupByString.equals("") == false){ //required variables are present
-						for (int i=0;i<sourceList.size();i++){
-							logWindow.printString("Extracting Data for "+sourceList.get(i).getSourceName()+".....");
-
-							try{
-								
-								SimpleDateFormat hourFormat = new SimpleDateFormat("HH");
-								SimpleDateFormat minuteFormat = new SimpleDateFormat("mm");
-								hourFormat.setTimeZone(TimeZone.getTimeZone("GMT+10"));
-								minuteFormat.setTimeZone(TimeZone.getTimeZone("GMT+10"));
-	
-	
-								//String minDateString = csvDateFormatter.format(startDate)+" 00:01:00";
-								//String maxDateString = csvDateFormatter.format(endDate)+" 00:00:00";
-	
-								String minDateString = sqlDateFormatter.format(customStartAndEndDates.get(i)[0]);
-								String maxDateString = sqlDateFormatter.format(customStartAndEndDates.get(i)[1]);
-								
-								System.out.println("Dates: "+minDateString+" "+maxDateString);
-	
-	
-								String valueString = "ROUND(data_sa.value,3) AS rawData, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
-								String joinString = "LEFT JOIN files USING (file_id)";
-								
-
-								//System.out.println(valueString);
-								//System.out.println(joinString);
-								//System.out.println(circuitFrequency);
-	
-	
-								if (minDateString.equals("") == false && maxDateString.equals("") == false && valueString.equals("") == false){ //max sure required variables are in place
-									String getDataSQL =  "SELECT "+blockString+","+valueString+" FROM data_sa "+joinString+" WHERE data_sa.site_id = "+sourceList.get(i).getSite().getSiteID()+" AND data_sa.source_id = "+sourceList.get(i).getSourceID()+" AND data_sa.date_time BETWEEN '"+minDateString+"' AND '"+maxDateString+"' "+groupByString;
-									System.out.println(getDataSQL);
-									Statement getData_statement = dbConn.createStatement();
-									ResultSet getDataRS = getData_statement.executeQuery(getDataSQL);
-	
-									int rowCounter = 0;
-	
-									Calendar dbDate = new GregorianCalendar();
-									dbDate.setTimeZone(TimeZone.getTimeZone("GMT+10"));
-									dbDate.setTimeInMillis(startDate);
-									while (getDataRS.next()){
-										dbDate.setTimeInMillis(getDataRS.getLong("blockDate_ts")*1000);
-										dbDate.add(Calendar.MINUTE,getDataRS.getInt("blockHour")*60+getDataRS.getInt("blockMinute"));
-										while (rowDates[rowCounter]<dbDate.getTimeInMillis()){
-											rawData[rowCounter][i] = null;
-											//countData[rowCounter][i] = null;
-											rowCounter++;
+						Double[][] rawData = new Double [rowsRequired][sourceList.size()];
+						//Double[][] countData = new Double [rowsRequired][sourceList.size()];
+						long rowDates[] = new long[rowsRequired];
+						String rowDateStrings[] = new String[rowsRequired];
+		
+						Calendar rollDate = new GregorianCalendar();
+						rollDate.setTimeZone(TimeZone.getTimeZone("GMT+10"));
+						rollDate.setTimeInMillis(segmentStartDate);
+						
+						for (int i=0;i<rowDates.length;i++){
+							rowDates[i] = rollDate.getTimeInMillis();
+							rowDateStrings[i] = sqlDateFormatter.format(rowDates[i]);
+							rollDate.add(Calendar.MINUTE, minFreq);
+						}
+		
+						//String blockString = "";
+						//String groupByString = "";
+						//blockString = "UNIX_TIMESTAMP(DATE(date_time)) AS blockDate_ts,HOUR(date_time) AS blockHour,MINUTE(date_time) AS blockMinute";
+						//groupByString = "GROUP BY blockDate_ts,blockHour,blockMinute";
+						String dateString = "UNIX_TIMESTAMP(date_time) AS unix_ts";
+						
+						/*if (samplePeriod == "Ten Minutely"){
+							blockString = "UNIX_TIMESTAMP(CASE WHEN HOUR(date_time)+MINUTE(date_time)/60 > 23+(5/6) THEN DATE(DATE_ADD(date_time,INTERVAL 1 HOUR)) ELSE DATE(date_time) END) AS blockDate_ts,CASE WHEN HOUR(date_time)+MINUTE(date_time)/60 > 23+(5/6) THEN 0 ELSE CASE WHEN MINUTE(date_time) > 50 THEN CEIL(HOUR(date_time)+MINUTE(date_time)/60) ELSE FLOOR(HOUR(date_time)+MINUTE(date_time)/60) END END AS blockHour,CASE WHEN MINUTE(date_time) > 50 THEN 0 ELSE CEIL(MINUTE(date_time)/10)*10 END AS blockMinute";
+							groupByString = "GROUP BY blockDate_ts,blockHour,blockMinute";
+						}
+						else if (samplePeriod.equals("Hourly")){
+							blockString = "UNIX_TIMESTAMP(CASE CEIL(HOUR(date_time)+MINUTE(date_time)/60) WHEN 24 THEN DATE(DATE_ADD(date_time,INTERVAL 1 HOUR)) ELSE DATE(date_time) END) AS blockDate_ts,CASE CEIL(HOUR(date_time)+MINUTE(date_time)/60) WHEN 24 THEN 0 ELSE CEIL(HOUR(date_time)+MINUTE(date_time)/60) END AS blockHour";
+							groupByString = "GROUP BY blockDate_ts,blockHour";
+						}
+						else if (samplePeriod.equals("Daily")){
+							blockString = "UNIX_TIMESTAMP(DATE(DATE_SUB(date_time, INTERVAL 1 MINUTE))) AS blockDate_ts";
+							groupByString = "GROUP BY blockDate_ts";
+						}
+						else if (samplePeriod.equals("Monthly")){
+							blockString = "UNIX_TIMESTAMP(STR_TO_DATE(DATE_FORMAT(DATE_SUB(date_time, INTERVAL 1 MINUTE),'%Y-%m-01'),'%Y-%m-%d')) AS blockDate_ts";
+							groupByString = "GROUP BY blockDate_ts";
+						}
+						else{
+							logWindow.println("ERROR: Sample period not recognised, channels will not be processed");
+						}*/
+		
+						if (dateString.equals("") == false){ //required variables are present
+							for (int i=0;i<sourceList.size();i++){
+								if (segmentStartDate <= customStartAndEndDates.get(i)[1] && segmentEndDate >= customStartAndEndDates.get(i)[0]){
+									//logWindow.printString("Extracting Data for "+sourceList.get(i).getSourceName()+".....");
+		
+									try{
+										
+										//SimpleDateFormat hourFormat = new SimpleDateFormat("HH");
+										//SimpleDateFormat minuteFormat = new SimpleDateFormat("mm");
+										//hourFormat.setTimeZone(TimeZone.getTimeZone("GMT+10"));
+										//minuteFormat.setTimeZone(TimeZone.getTimeZone("GMT+10"));
+			
+			
+										//String minDateString = csvDateFormatter.format(startDate)+" 00:01:00";
+										//String maxDateString = csvDateFormatter.format(endDate)+" 00:00:00";
+			
+										String minDateString = sqlDateFormatter.format(Math.max(segmentStartDate, customStartAndEndDates.get(i)[0]));
+										String maxDateString = sqlDateFormatter.format(Math.min(segmentEndDate, customStartAndEndDates.get(i)[1]));
+										
+										//System.out.println("Dates: "+minDateString+" "+maxDateString);
+			
+			
+										String valueString = "ROUND(data_sa.value,3) AS rawData"; //, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
+										//String joinString = "LEFT JOIN files USING (file_id)";
+										
+		
+										//System.out.println(valueString);
+										//System.out.println(joinString);
+										//System.out.println(circuitFrequency);
+			
+			
+										if (minDateString.equals("") == false && maxDateString.equals("") == false && valueString.equals("") == false){ //max sure required variables are in place
+											String getDataSQL =  "SELECT "+dateString+","+valueString+" FROM data_sa WHERE data_sa.site_id = "+sourceList.get(i).getSite().getSiteID()+" AND data_sa.source_id = "+sourceList.get(i).getSourceID()+" AND data_sa.date_time BETWEEN '"+minDateString+"' AND '"+maxDateString+"'";
+											//System.out.println(getDataSQL);
+											Statement getData_statement = dbConn.createStatement();
+											ResultSet getDataRS = getData_statement.executeQuery(getDataSQL);
+			
+											int rowCounter = 0;
+			
+											Calendar dbDate = new GregorianCalendar();
+											dbDate.setTimeZone(TimeZone.getTimeZone("GMT+10"));
+											while (getDataRS.next()){
+												dbDate.setTimeInMillis(getDataRS.getLong("unix_ts")*1000);
+												while (rowDates[rowCounter]<dbDate.getTimeInMillis()){
+													rawData[rowCounter][i] = null;
+													//countData[rowCounter][i] = null;
+													rowCounter++;
+												}
+			
+												rawData[rowCounter][i] = getDataRS.getDouble("rawData");
+			
+												if(getDataRS.wasNull()){rawData[rowCounter][i] = null;}
+			
+												//countData[rowCounter][i] = getDataRS.getDouble("pointCount");
+												//if (getDataRS.wasNull()){countData[rowCounter][i] = null;}
+			
+												rowCounter++;
+											}
+			
+											getDataRS.close();
+											getData_statement.close();
 										}
-	
-										rawData[rowCounter][i] = getDataRS.getDouble("rawData");
-	
-										if(getDataRS.wasNull()){rawData[rowCounter][i] = null;}
-	
-										//countData[rowCounter][i] = getDataRS.getDouble("pointCount");
-										//if (getDataRS.wasNull()){countData[rowCounter][i] = null;}
-	
-										rowCounter++;
 									}
+									catch(SQLException sE){
+										sE.printStackTrace();
+										StackTraceElement[] sTE = sE.getStackTrace();
+										for (int c=0;c<sTE.length;c++){
+											logWindow.println(sTE[c].toString());
+										}
+										throw sE;
+									}
+									catch(Exception e){
+										e.printStackTrace();
+										StackTraceElement[] sTE = e.getStackTrace();
+										for (int c=0;c<sTE.length;c++){
+											logWindow.println(sTE[c].toString());
+										}
+									}
+								}
+							}
+						}
+						for(int j=0;j<rowsRequired;j++){
+							csvWriter.append(rowDateStrings[j]+",");
+							for (int i=0;i<sourceList.size();i++){
 	
-									getDataRS.close();
-									getData_statement.close();
-									logWindow.println("Done.");
+								int legitCount = (rawData[j][i]==null?0:1);
+								//double weightedAverageSums = (averagedData[j][i]==null? 0 : averagedData[j][i]*(countData[j][i]==null? 0 : countData[j][i]) );
+								//double countSum = (countData[j][i]==null? 0 : countData[j][i]);
+								double rawDataPoint = rawData[j][i]==null? 0 : rawData[j][i];
+								while (i+1 < sourceList.size() && sourceList.get(i+1).equals(sourceList.get(i))){
+									legitCount += (rawData[j][i+1]==null?0:1);
+									if (rawData[j][i+1]!=null){//find first number that is not null for a particular source
+										rawDataPoint = rawData[j][i];
+										break;
+									}
+									//weightedAverageSums += (averagedData[j][i+1]==null? 0 : averagedData[j][i+1]*(countData[j][i+1]==null? 0 : countData[j][i+1]) );
+									//countSum += (countData[j][i+1]==null? 0 : countData[j][i+1]);
+									i++;
+								}
+	
+								//csvWriter.append((legitCount==0 ? "null" : new DecimalFormat("#.###").format(weightedAverageSums/countSum) ));
+								csvWriter.append((legitCount==0 ? "null" : new DecimalFormat("#.###").format(rawDataPoint) ));
+	
+								//csvWriter.append((averagedData[j][i]==null ? "null" : Double.toString(averagedData[j][i])));
+								//if (includeCount){csvWriter.append(","+(countData[j][i]==null ? "null" : (samplePeriod.equals("Monthly")? Double.toString(Math.round(countData[j][i]/1440)) : Double.toString(countData[j][i]) )));}
+								//if (doStdDev){csvWriter.append(","+(stdDevData[j][i]==null ? "null" : Double.toString(stdDevData[j][i])));}
+	
+	
+								if (i<sourceList.size()-1){
+									csvWriter.append(",");
 								}
 							}
-							catch(SQLException sE){
-								sE.printStackTrace();
-								StackTraceElement[] sTE = sE.getStackTrace();
-								for (int c=0;c<sTE.length;c++){
-									logWindow.println(sTE[c].toString());
-								}
-								throw sE;
-							}
-							catch(Exception e){
-								e.printStackTrace();
-								StackTraceElement[] sTE = e.getStackTrace();
-								for (int c=0;c<sTE.length;c++){
-									logWindow.println(sTE[c].toString());
-								}
-							}
-
+						
+							csvWriter.append("\r\n");
 						}
-					}
-					for(int j=0;j<rowsRequired;j++){
-						csvWriter.append(rowDateStrings[j]+",");
-						for (int i=0;i<sourceList.size();i++){
-
-							int legitCount = (rawData[j][i]==null?0:1);
-							//double weightedAverageSums = (averagedData[j][i]==null? 0 : averagedData[j][i]*(countData[j][i]==null? 0 : countData[j][i]) );
-							//double countSum = (countData[j][i]==null? 0 : countData[j][i]);
-							double rawDataPoint = rawData[j][i]==null? 0 : rawData[j][i];
-							while (i+1 < sourceList.size() && sourceList.get(i+1).equals(sourceList.get(i))){
-								legitCount += (rawData[j][i+1]==null?0:1);
-								if (rawData[j][i+1]!=null){//find first number that is not null for a particular source
-									rawDataPoint = rawData[j][i];
-									break;
-								}
-								//weightedAverageSums += (averagedData[j][i+1]==null? 0 : averagedData[j][i+1]*(countData[j][i+1]==null? 0 : countData[j][i+1]) );
-								//countSum += (countData[j][i+1]==null? 0 : countData[j][i+1]);
-								i++;
-							}
-
-							//csvWriter.append((legitCount==0 ? "null" : new DecimalFormat("#.###").format(weightedAverageSums/countSum) ));
-							csvWriter.append((legitCount==0 ? "null" : new DecimalFormat("#.###").format(rawDataPoint) ));
-
-							//csvWriter.append((averagedData[j][i]==null ? "null" : Double.toString(averagedData[j][i])));
-							//if (includeCount){csvWriter.append(","+(countData[j][i]==null ? "null" : (samplePeriod.equals("Monthly")? Double.toString(Math.round(countData[j][i]/1440)) : Double.toString(countData[j][i]) )));}
-							//if (doStdDev){csvWriter.append(","+(stdDevData[j][i]==null ? "null" : Double.toString(stdDevData[j][i])));}
-
-
-							if (i<sourceList.size()-1){
-								csvWriter.append(",");
-							}
-						}
-					
-						csvWriter.append("\r\n");
+						
+						Date segmentEnd = new Date();
+						logWindow.println("Done ("+getTimeString(segmentEnd.getTime()-segmentStart.getTime())+")");
+						
+						segmentStartDate = segmentEndDate + 1000*60*minFreq;
 					}
 	
 				} catch (SQLException sE) {
