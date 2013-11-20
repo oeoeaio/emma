@@ -41,6 +41,7 @@ public class AverageAnalysis implements Runnable{
 	private final String analysisType;
 	private final boolean includeCount;
 	private final boolean doStdDev;
+	private final boolean doMinMax;
 	
 	
 	
@@ -60,6 +61,7 @@ public class AverageAnalysis implements Runnable{
 		this.analysisType = analysisType;
 		this.includeCount = includeCount;
 		this.doStdDev = doStdDev;
+		this.doMinMax = true;
 	}
 	
 	public void run(){
@@ -93,6 +95,7 @@ public class AverageAnalysis implements Runnable{
 						csvWriter.append(sourceList.get(i).getSite().getSiteName());
 						if(includeCount){csvWriter.append(","+sourceList.get(i).getSite().getSiteName());}
 						if(doStdDev){csvWriter.append(","+sourceList.get(i).getSite().getSiteName());}
+						if(doMinMax){csvWriter.append(","+sourceList.get(i).getSite().getSiteName()+","+sourceList.get(i).getSite().getSiteName());}
 						if (i<sourceList.size()-1){
 							csvWriter.append(",");
 						}
@@ -110,6 +113,7 @@ public class AverageAnalysis implements Runnable{
 					csvWriter.append(sourceList.get(i).getSourceName());
 					if(includeCount){csvWriter.append(","+sourceList.get(i).getSourceName());}
 					if(doStdDev){csvWriter.append(","+sourceList.get(i).getSourceName());}
+					if(doMinMax){csvWriter.append(","+sourceList.get(i).getSourceName()+","+sourceList.get(i).getSourceName());}
 					if (i<sourceList.size()-1){
 						csvWriter.append(",");
 					}
@@ -118,12 +122,13 @@ public class AverageAnalysis implements Runnable{
 					}
 				}
 				
-				if(includeCount || doStdDev){
+				if(includeCount || doStdDev || doMinMax){
 					csvWriter.append("\r\nDate,");
 					for (int i=0;i<sourceList.size();i++){
 						csvWriter.append((analysisType.equals("lightSum")?"OnTime" : "Average"));
 						if(includeCount){csvWriter.append(",Count");}
 						if(doStdDev){csvWriter.append(",StdDev");}
+						if(doMinMax){csvWriter.append(",Min,Max");}
 						if (i<sourceList.size()-1){
 							csvWriter.append(",");
 						}
@@ -163,6 +168,8 @@ public class AverageAnalysis implements Runnable{
 					Double[][] averagedData = new Double [rowsRequired][sourceList.size()];
 					Double[][] countData = new Double [rowsRequired][sourceList.size()];
 					Double[][] stdDevData = new Double [rowsRequired][sourceList.size()];
+					Double[][] minData = new Double [rowsRequired][sourceList.size()];
+					Double[][] maxData = new Double [rowsRequired][sourceList.size()];
 					long rowDates[] = new long[rowsRequired];
 					String rowDateStrings[] = new String[rowsRequired];
 	
@@ -270,6 +277,10 @@ public class AverageAnalysis implements Runnable{
 								if(doStdDev){
 									valueString += ",ROUND(STDDEV(data_sa.value),3) AS standardDev";
 								}
+								if(doMinMax){
+									valueString += ",ROUND(MIN(data_sa.value),3) AS minVal,ROUND(MAX(data_sa.value),3) AS maxVal";
+								}
+								
 								int circuitFrequency = 0;
 	
 								if (analysisType.equals("avg")){
@@ -340,6 +351,7 @@ public class AverageAnalysis implements Runnable{
 												averagedData[rowCounter][i] = null;
 												countData[rowCounter][i] = null;
 												if (doStdDev){stdDevData[rowCounter][i] = null;}
+												if (doMinMax){minData[rowCounter][i] = null;maxData[rowCounter][i] = null;}
 												rowCounter++;
 											}
 										}
@@ -350,6 +362,7 @@ public class AverageAnalysis implements Runnable{
 												averagedData[rowCounter][i] = null;
 												countData[rowCounter][i] = null;
 												if (doStdDev){stdDevData[rowCounter][i] = null;}
+												if (doMinMax){minData[rowCounter][i] = null;maxData[rowCounter][i] = null;}
 												rowCounter++;
 											}
 										}
@@ -359,6 +372,7 @@ public class AverageAnalysis implements Runnable{
 												averagedData[rowCounter][i] = null;
 												countData[rowCounter][i] = null;
 												if (doStdDev){stdDevData[rowCounter][i] = null;}
+												if (doMinMax){minData[rowCounter][i] = null;maxData[rowCounter][i] = null;}
 												rowCounter++;
 											}
 										}
@@ -368,6 +382,7 @@ public class AverageAnalysis implements Runnable{
 												averagedData[rowCounter][i] = null;
 												countData[rowCounter][i] = null;
 												if (doStdDev){stdDevData[rowCounter][i] = null;}
+												if (doMinMax){minData[rowCounter][i] = null;maxData[rowCounter][i] = null;}
 												rowCounter++;
 											}
 										}
@@ -382,6 +397,13 @@ public class AverageAnalysis implements Runnable{
 										if (doStdDev){
 											stdDevData[rowCounter][i] = getDataRS.getDouble("standardDev");
 											if (getDataRS.wasNull()){stdDevData[rowCounter][i] = null;}
+										}
+										
+										if (doMinMax){
+											minData[rowCounter][i] = getDataRS.getDouble("minVal");
+											if (getDataRS.wasNull()){minData[rowCounter][i] = null;}
+											maxData[rowCounter][i] = getDataRS.getDouble("maxVal");
+											if (getDataRS.wasNull()){maxData[rowCounter][i] = null;}
 										}
 	
 	
@@ -420,17 +442,22 @@ public class AverageAnalysis implements Runnable{
 								double weightedAverageSums = (averagedData[j][i]==null? 0 : averagedData[j][i]*(countData[j][i]==null? 0 : countData[j][i]) );
 								double weightedStdDevs = (stdDevData[j][i]==null? 0 : stdDevData[j][i]*(countData[j][i]==null? 0 : countData[j][i]) );
 								double countSum = (countData[j][i]==null? 0 : countData[j][i]);
+								double minVal = (minData[j][i]==null? 0 : minData[j][i]);
+								double maxVal = (maxData[j][i]==null? 0 : maxData[j][i]);
 								while (i+1 < sourceList.size() && sourceList.get(i+1).equals(sourceList.get(i))){
 									legitCount += (averagedData[j][i+1]==null?0:1);
 									weightedAverageSums += (averagedData[j][i+1]==null? 0 : averagedData[j][i+1]*(countData[j][i+1]==null? 0 : countData[j][i+1]) );
 									weightedStdDevs += (stdDevData[j][i+1]==null? 0 : stdDevData[j][i+1]*(countData[j][i+1]==null? 0 : countData[j][i+1]) );
 									countSum += (countData[j][i+1]==null? 0 : countData[j][i+1]);
+									minVal = Math.min(minVal,minData[j][i+1]==null? 0 : minData[j][i+1]);
+									maxVal = Math.max(maxVal,maxData[j][i+1]==null? 0 : maxData[j][i+1]);
 									i++;
 								}
 								
 								csvWriter.append((legitCount==0 ? "null" : new DecimalFormat("#.###").format(weightedAverageSums/countSum) ));
 								if (includeCount){csvWriter.append(","+(legitCount==0 ? "null" : (samplePeriod.equals("Monthly")? new DecimalFormat("#.#").format(countSum/1440) : new DecimalFormat("#.#").format(countSum) )));}
 								if (doStdDev){csvWriter.append(","+(legitCount==0 ? "null" : new DecimalFormat("#.###").format(weightedStdDevs/countSum) ));}
+								if (doMinMax){csvWriter.append(","+(legitCount==0 ? "null,null" : new DecimalFormat("#.###").format(minVal) + "," + new DecimalFormat("#.###").format(maxVal) ));}
 								
 								
 								//csvWriter.append((averagedData[j][i]==null ? "null" : Double.toString(averagedData[j][i])));
@@ -476,6 +503,7 @@ public class AverageAnalysis implements Runnable{
 								csvWriter.append((averagedData[j][i]==null ? "null" : Double.toString(averagedData[j][i])));
 								if (includeCount){csvWriter.append(","+(countData[j][i]==null ? "null" : (samplePeriod.equals("Monthly")? Double.toString(Math.round(countData[j][i]/1440)) : Double.toString(countData[j][i]) )));}
 								if (doStdDev){csvWriter.append(","+(stdDevData[j][i]==null ? "null" : Double.toString(stdDevData[j][i])));}
+								if (doMinMax){csvWriter.append(","+(minData[j][i]==null ? "null" : Double.toString(minData[j][i])) +"," + (maxData[j][i]==null ? "null" : Double.toString(maxData[j][i])) );}
 								
 								if (i<sourceList.size()-1){
 									csvWriter.append(",");
