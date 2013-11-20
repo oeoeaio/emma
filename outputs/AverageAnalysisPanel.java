@@ -83,6 +83,7 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 	//private final JLabel dataCountL = new JLabel("Sample Period");
 	private final JCheckBox dataCountBox = new JCheckBox("Do Data Count?", false);
 	private final JCheckBox stdDevBox = new JCheckBox("Do StdDev Analysis?", false);
+	private final JCheckBox minMaxBox = new JCheckBox("Do Min/Max Analysis?", false);
 	
 	//SamplePeriodPanel
 	private final JPanel samplePeriodPanel = new JPanel(new FlowLayout());
@@ -171,6 +172,7 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 		
 		checkBoxPanel.add(dataCountBox);
 		checkBoxPanel.add(stdDevBox);
+		checkBoxPanel.add(minMaxBox);
 				
 		samplePeriodPanel.add(samplePeriodL);
 		samplePeriodPanel.add(samplePeriodS);
@@ -379,7 +381,7 @@ public class AverageAnalysisPanel extends JPanel implements ItemListener,ActionL
 				
 				if (sourceList.size() > 0){
 					//System.out.println(sqlDateFormatter.format(startDate)+" "+sqlDateFormatter.format(endDate));
-					Thread averageAnalysisProcess = new Thread(new AverageAnalysis(new LogWindow("Average analysis process log"),dbConn,sourceList,customStartAndEndDates,frequencies,siteSelectionType.getSelectedItem().equals("All"),startDate,endDate,samplePeriod,analysisType,dataCountBox.isSelected(),stdDevBox.isSelected()));
+					Thread averageAnalysisProcess = new Thread(new AverageAnalysis(new LogWindow("Average analysis process log"),dbConn,sourceList,customStartAndEndDates,frequencies,siteSelectionType.getSelectedItem().equals("All"),startDate,endDate,samplePeriod,analysisType,dataCountBox.isSelected(),stdDevBox.isSelected(),minMaxBox.isSelected()));
 					averageAnalysisProcess.start();
 				}
 				else{

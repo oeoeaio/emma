@@ -45,7 +45,7 @@ public class AverageAnalysis implements Runnable{
 	
 	
 	
-	AverageAnalysis(LogWindow logWindow,Connection dbConn,LinkedList<Source> sourceList,LinkedList<long[]> customStartAndEndDates,LinkedList<Integer> frequencies,boolean multipleSites,long startDate,long endDate,String samplePeriod,String analysisType,boolean includeCount,boolean doStdDev){
+	AverageAnalysis(LogWindow logWindow,Connection dbConn,LinkedList<Source> sourceList,LinkedList<long[]> customStartAndEndDates,LinkedList<Integer> frequencies,boolean multipleSites,long startDate,long endDate,String samplePeriod,String analysisType,boolean includeCount,boolean doStdDev,boolean doMinMax){
 		dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		monthDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		csvDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
@@ -61,7 +61,7 @@ public class AverageAnalysis implements Runnable{
 		this.analysisType = analysisType;
 		this.includeCount = includeCount;
 		this.doStdDev = doStdDev;
-		this.doMinMax = true;
+		this.doMinMax = doMinMax;
 	}
 	
 	public void run(){
