@@ -267,7 +267,7 @@ public class AverageAnalysis implements Runnable{
 								String minDateString = sqlDateFormatter.format(customStartAndEndDates.get(i)[0]);
 								String maxDateString = sqlDateFormatter.format(customStartAndEndDates.get(i)[1]);
 								
-								System.out.println("Dates: "+minDateString+" "+maxDateString);
+								//System.out.println("Dates: "+minDateString+" "+maxDateString);
 	
 	
 								String valueString = "ROUND(AVG(data_sa.value),3) AS analysisValue, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
@@ -334,7 +334,7 @@ public class AverageAnalysis implements Runnable{
 	
 								if (minDateString.equals("") == false && maxDateString.equals("") == false && valueString.equals("") == false && (!analysisType.equals("circuitResidual") || (analysisType.equals("circuitResidual") && circuitFrequency!=0))){ //max sure required variables are in place
 									String getDataSQL =  "SELECT "+blockString+","+valueString+" FROM data_sa "+joinString+" WHERE data_sa.site_id = "+sourceList.get(i).getSite().getSiteID()+" AND data_sa.source_id = "+sourceList.get(i).getSourceID()+" AND data_sa.date_time BETWEEN '"+minDateString+"' AND '"+maxDateString+"' "+groupByString;
-									System.out.println(getDataSQL);
+									//System.out.println(getDataSQL);
 									Statement getData_statement = dbConn.createStatement();
 									ResultSet getDataRS = getData_statement.executeQuery(getDataSQL);
 	
