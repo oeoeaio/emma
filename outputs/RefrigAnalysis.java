@@ -640,8 +640,8 @@ public class RefrigAnalysis implements Runnable{
 				else if (i>2 && crossoverArray.get(i-2)[1] == 5 && crossoverArray.get(i-3)[1] == 3){
 					if (threshold == 1){threshold = 4;}
 				}
-				else if (i<crossoverArray.size()-1 && (offCount/(onCount+offCount)) * ((onCount+offCount)*(frequency/60)) > 90){
-					//if more than 90 mins in off
+				else if (i<crossoverArray.size()-1 && (offCount/(onCount+offCount)) * ((onCount+offCount)*(frequency/60)) > 45){
+					//if more than 45 mins in off
 					threshold = 8;
 					if (i<crossoverArray.size()-2 && crossoverArray.get(i)[1] != 5){
 						crossoverArray.get(i)[1] = 9;
