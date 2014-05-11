@@ -14,7 +14,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TimeZone;
@@ -92,7 +91,6 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 	//Variables
 	SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 	SimpleDateFormat sqlDateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	Calendar startDate = new GregorianCalendar();
 	String inDateFormat = new String();
 	int inFirstRow = -1; //the first row that valid data appears in input file
 	String tempDateFormat = new String();
@@ -102,7 +100,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 
 	public RefrigAnalysisPanel(Connection dbConn){
 		//version 0.0.10
-		startDate.setTimeZone(TimeZone.getTimeZone("GMT+10"));
+		sqlDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		this.dbConn = dbConn;
 		
@@ -345,7 +343,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 		if (refrigSourceTable.sourceListModel.isSelectionEmpty()==false && refrigSourceTable.getValueAt(refrigSourceTable.getSelectedRow(),0).toString()!=null){
 			Statement MySQL_Statement = dbConn.createStatement();
 			Date before = new Date();
-			String getMinMaxSQL = "SELECT UNIX_TIMESTAMP(DATE_ADD(DATE(MIN(date_time)),INTERVAL 1 DAY)) AS min_date,UNIX_TIMESTAMP(DATE(MAX(date_time))) AS max_date FROM data_sa WHERE site_id = "+siteTable.getValueAt(siteTable.getSelectedRow(),0)+" AND source_id = "+refrigSourceTable.getValueAt(refrigSourceTable.getSelectedRow(),0);
+			String getMinMaxSQL = "SELECT UNIX_TIMESTAMP(DATE(MIN(date_time))) AS min_date,UNIX_TIMESTAMP(DATE_ADD(DATE(MAX(date_time)), INTERVAL 1 DAY)) AS max_date FROM data_sa WHERE site_id = "+siteTable.getValueAt(siteTable.getSelectedRow(),0)+" AND source_id = "+refrigSourceTable.getValueAt(refrigSourceTable.getSelectedRow(),0);
 			ResultSet minMaxResults = MySQL_Statement.executeQuery(getMinMaxSQL);
 			System.out.println(new Date().getTime()-before.getTime());
 			if (minMaxResults.next()){
