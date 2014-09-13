@@ -254,7 +254,8 @@ public class RefrigAnalysis implements Runnable{
 
 					if (threshold1!=threshold2 && threshold2!=0){
 						if (prevPower<threshold1 && (currPower>=threshold1 && currPower<threshold2)){ // standby to compressor
-							if (nextPower>=threshold1 && nextPower<threshold2){ //ensures that no intermediate points are caught
+							//if (nextPower>=threshold1 && nextPower<threshold2){ //ensures that no intermediate points are caught
+							if (nextPower<threshold2){ //ensures that no intermediate points are caught
 								if (crossoverArray.get(crossoverArray.size()-1)[1] != 1){
 									crossoverArray.add(new int[] {i,1});
 								}
