@@ -22,13 +22,12 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.WindowConstants;
 
 import dataPlotter.DataPlotPanel;
+import fileManagement.BOMValidator;
 import fileManagement.CTValidator;
 import fileManagement.PDCDecodeWindow;
 import fileManagement.PDCImportPanel;
 import fileManagement.StandAloneBatchImporter;
 import fileManagement.StandAloneImportPanel;
-
-
 import outputs.AverageAnalysisPanel;
 import outputs.EnergyAnalysisPanel;
 import outputs.DiscreteModeAnalysisPanel;
@@ -37,7 +36,6 @@ import outputs.RefrigAnalysisPanel;
 import outputs.TimeOfDayAnalysisPanel;
 import tools.BatchFileSNDatesPanel;
 import tools.MissingSummaryPanel;
-
 import management.SiteManagementPanel;
 import management.SourceManagementPanel;
 import missingPlotter.MissingPlotPanel;
@@ -57,6 +55,7 @@ public class EndUseWindow extends JFrame implements ActionListener{
 	JMenuItem standAloneImport = new JMenuItem("Standalone File (.txt/.csv)");
 	JMenuItem pdcImport = new JMenuItem("PDC File(s) (.pdc)");
 	JMenuItem ctImport = new JMenuItem("CT File (.txt)");
+	JMenuItem bomImport = new JMenuItem("BOM File (.txt)");
 	
 	JMenu exportMenu = new JMenu("Export");
 	JMenuItem exportBatchFile = new JMenuItem("Batch File (.csv)");
@@ -159,10 +158,12 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			importMenu.add(standAloneImport);
 			importMenu.add(pdcImport);
 			importMenu.add(ctImport);
+			importMenu.add(bomImport);
 			importBatchFile.addActionListener(this);
 			standAloneImport.addActionListener(this);
 			pdcImport.addActionListener(this);
 			ctImport.addActionListener(this);
+			bomImport.addActionListener(this);
 			
 			fileMenu.add(exportMenu);
 			exportMenu.add(exportBatchFile);
@@ -253,6 +254,17 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			if (fileChooser.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){
 				fileSettings.put("LastCTOpen", fileChooser.getSelectedFile().getParent());
 				Thread processBatch = new Thread(new CTValidator(mySQLConnection,new LogWindow("CT Data Import Log"),fileChooser.getSelectedFile()));
+				processBatch.start();
+			}
+		}
+		else if (aE.getSource().equals(bomImport)){
+			JFileChooser fileChooser = new JFileChooser();
+			File lastDir = new File(fileSettings.get("LastBOMOpen", fileChooser.getCurrentDirectory().getAbsolutePath()));
+			if (lastDir.isDirectory()){fileChooser.setCurrentDirectory(lastDir);}
+			fileChooser.setMultiSelectionEnabled(true);
+			if (fileChooser.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){
+				fileSettings.put("LastBOMOpen", fileChooser.getSelectedFile().getParent());
+				Thread processBatch = new Thread(new BOMValidator(mySQLConnection,new LogWindow("BOM Data Import Log"),fileChooser.getSelectedFiles()));
 				processBatch.start();
 			}
 		}
