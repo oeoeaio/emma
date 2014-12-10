@@ -31,7 +31,7 @@ import endUseWindow.Site;
 
 public class SiteNotFoundWindow extends JFrame implements ActionListener {
 	static final long serialVersionUID = 474802667938989652L;
-	
+
 	//Main Panel
 	JPanel mainPanel = new JPanel(new BorderLayout());
 	//Top Panel
@@ -85,43 +85,43 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 	JPanel o3Panel = new JPanel(new BorderLayout());
 	JRadioButton o3Button = new JRadioButton("<html>Do nothing and cease<br>processing of this file<br>for the time being.</html>");
 	ButtonGroup options = new ButtonGroup();
-	
+
 	//Bottom Panel
 	JPanel bottomPanel = new JPanel(new FlowLayout());
 	JButton submitButton = new JButton("Submit");
-	
+
 	Site newSite = null;
 	ArrayList<Site> siteList = new ArrayList<Site>();
-	
+
 	Connection dbConn;
 	LogWindow logWindow;
-	
+
 	SiteNotFoundWindow(Connection dbConn,LogWindow logWindow){
 		this.dbConn = dbConn;
 		this.logWindow = logWindow;
 	}
-	
+
 	void buildGUI(String siteName){
 		this.setVisible(false);
 		this.setSize(600,300);
 		this.setLocation(300,200);
 		this.setTitle("Site Not Found");
-		
+
 		mainPanel.add(topPanel,BorderLayout.NORTH);
 		mainPanel.add(middlePanel,BorderLayout.CENTER);
 		mainPanel.add(bottomPanel,BorderLayout.SOUTH);
-		
+
 		topPanel.add(topLabel);
 		topLabel.setText("The site name '"+siteName+"' could not be matched. Please select an option to resolve this problem.");
-		
+
 		middlePanel.add(o1Panel);
 		middlePanel.add(o2Panel);
 		middlePanel.add(o3Panel);
-		
+
 		o1Panel.setBorder(BorderFactory.createMatteBorder(1,1,1,0,Color.black));
 		o2Panel.setBorder(BorderFactory.createMatteBorder(1,1,1,1,Color.black));
 		o3Panel.setBorder(BorderFactory.createMatteBorder(1,0,1,1,Color.black));
-		
+
 		options.add(o1Button);
 		options.add(o2Button);
 		options.add(o3Button);
@@ -129,14 +129,14 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		o2Button.addActionListener(this);
 		o3Button.addActionListener(this);
 		o3Button.setSelected(true);
-		
+
 		o1Panel.add(o1Button,BorderLayout.NORTH);
 		o1Panel.add(o1InfoPanel,BorderLayout.CENTER);
-		
+
 		o1InfoPanel.setBorder(new EmptyBorder(0,5,0,0));
 		o1InfoPanel.add(new JLabel("<html><b>Site from File:</b></html>"));
 		o1InfoPanel.add(o1InputPanel);
-		
+
 		o1InputPanel.add(o1SiteNameL);
 		o1InputPanel.add(o1SiteName);
 		o1InputPanel.add(o1ConcentratorL);
@@ -153,7 +153,7 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		o1InputPanel.add(o1Suburb);
 		o1InputPanel.add(o1StateL);
 		o1InputPanel.add(o1State);
-		
+
 		try{ //get available sites
 			ResultSet allSites = dbConn.createStatement().executeQuery("SELECT * FROM sites");
 			if (allSites.next()){
@@ -183,14 +183,14 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		o1State.setEnabled(false);
 		o1SiteName.addActionListener(this);
 		o1SiteName.setSelectedIndex(0);
-				
+
 		o2Panel.add(o2Button,BorderLayout.NORTH);
 		o2Panel.add(o2InfoPanel,BorderLayout.CENTER);
-		
+
 		o2InfoPanel.setBorder(new EmptyBorder(0,5,0,0));
 		o2InfoPanel.add(new JLabel("<html><b>New Site:</b></html>"));
 		o2InfoPanel.add(o2InputPanel);
-		
+
 		o2InputPanel.add(o2SiteNameL);
 		o2InputPanel.add(o2SiteName);
 		o2InputPanel.add(o2ConcentratorL);
@@ -207,9 +207,9 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		o2InputPanel.add(o2Suburb);
 		o2InputPanel.add(o2StateL);
 		o2InputPanel.add(o2State);
-		
+
 		o3Panel.add(o3Button, BorderLayout.NORTH);
-		
+
 		bottomPanel.add(submitButton);
 		submitButton.addActionListener(this);
 
@@ -219,14 +219,14 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 		this.toFront();
 		this.requestFocus();
 	}
-	
+
 	Site getNewSite(final String siteName){
 		SwingUtilities.invokeLater(new Runnable(){
 			public void run(){
 				buildGUI(siteName);
 			}
 		});
-		
+
 		try {
 			synchronized (submitButton) {
 				submitButton.wait();
@@ -235,8 +235,8 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 			e.printStackTrace();
 		}
 		this.setVisible(false);
-		this.dispose();	
-		
+		this.dispose();
+
 		return newSite;
 	}
 
@@ -270,7 +270,7 @@ public class SiteNotFoundWindow extends JFrame implements ActionListener {
 				Site testSite = new Site(null,o2SiteName.getText(),o2Concentrator.getText(),o2StartDate.getText(),o2EndDate.getText(),o2GivenName.getText(),o2Surname.getText(),o2Suburb.getText(),o2State.getText());
 				if (testSite.isValid()){
 					try{
-						String addNewSiteSQL = "INSERT INTO sites (site_name,concentrator,given_name,surname,suburb,state) VALUES("+(testSite.getSiteName().equals("")?"NULL":"'"+testSite.getSiteName()+"'")+","+(testSite.getConcentrator().equals("")?"NULL":"'"+testSite.getConcentrator()+"'")+","+(testSite.getGivenName().equals("")?"NULL":"'"+testSite.getGivenName()+"'")+","+(testSite.getSurname().equals("")?"NULL":"'"+testSite.getSurname()+"'")+","+(testSite.getSuburb().equals("")?"NULL":"'"+testSite.getSuburb()+"'")+","+(testSite.getState().equals("")?"NULL":"'"+testSite.getState()+"'")+")";
+						String addNewSiteSQL = "INSERT INTO sites (site_name,concentrator,start_date,end_date,given_name,surname,suburb,state) VALUES("+(testSite.getSiteName().equals("")?"NULL":"'"+testSite.getSiteName()+"'")+","+(testSite.getConcentrator().equals("")?"NULL":"'"+testSite.getConcentrator()+"'")+","+(testSite.getStartDate().equals("")?"NULL":"'"+testSite.getStartDate()+"'")+","+(testSite.getEndDate().equals("")?"NULL":"'"+testSite.getEndDate()+"'")+","+(testSite.getGivenName().equals("")?"NULL":"'"+testSite.getGivenName()+"'")+","+(testSite.getSurname().equals("")?"NULL":"'"+testSite.getSurname()+"'")+","+(testSite.getSuburb().equals("")?"NULL":"'"+testSite.getSuburb()+"'")+","+(testSite.getState().equals("")?"NULL":"'"+testSite.getState()+"'")+")";
 						System.out.println(addNewSiteSQL);
 						dbConn.createStatement().executeUpdate(addNewSiteSQL);
 						logWindow.println("Added new site with name '"+testSite.getSiteName()+"'.");
