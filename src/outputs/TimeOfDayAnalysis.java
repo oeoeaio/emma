@@ -207,7 +207,7 @@ public class TimeOfDayAnalysis implements Runnable{
 								String maxDateString = sqlDateFormatter.format(customStartAndEndDates.get(i)[1]);
 
 								
-								String avgTotString = "ROUND(AVG(value),3) AS analysisValue,COUNT(*) AS record_count, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
+								String avgTotString = "ROUND(AVG(value),6) AS analysisValue,COUNT(*) AS record_count, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
 								String joinString = "LEFT JOIN files USING (file_id)";
 								int circuitFrequency = 0;
 								
@@ -218,7 +218,7 @@ public class TimeOfDayAnalysis implements Runnable{
 									
 									if (sourceTypeRS.next()){ //change conversion factor
 										if (sourceTypeRS.getString("source_type").equals("Light") && sourceTypeRS.getString("measurement_type").equals("OnTime")){
-											avgTotString = "ROUND(AVG(data_sa.value*(lights.wattage/files.frequency)),3) AS analysisValue, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
+											avgTotString = "ROUND(AVG(data_sa.value*(lights.wattage/files.frequency)),6) AS analysisValue, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
 											joinString = "LEFT JOIN files ON files.file_id = data_sa.file_id LEFT JOIN lights ON lights.source_id = data_sa.source_id";
 										}	
 									}

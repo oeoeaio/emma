@@ -270,15 +270,15 @@ public class AverageAnalysis implements Runnable{
 								//System.out.println("Dates: "+minDateString+" "+maxDateString);
 	
 	
-								String valueString = "ROUND(AVG(data_sa.value),3) AS analysisValue, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
+								String valueString = "ROUND(AVG(data_sa.value),6) AS analysisValue, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount";
 								String joinString = "LEFT JOIN files USING (file_id)";
 								//String valueString = "ROUND(SUM(data_sa.value*(files.frequency/60))/SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),3) AS analysisValue";
 								
 								if(doStdDev){
-									valueString += ",ROUND(STDDEV(data_sa.value),3) AS standardDev";
+									valueString += ",ROUND(STDDEV(data_sa.value),6) AS standardDev";
 								}
 								if(doMinMax){
-									valueString += ",ROUND(MIN(data_sa.value),3) AS minVal,ROUND(MAX(data_sa.value),3) AS maxVal";
+									valueString += ",ROUND(MIN(data_sa.value),6) AS minVal,ROUND(MAX(data_sa.value),6) AS maxVal";
 								}
 								
 								int circuitFrequency = 0;
@@ -290,7 +290,7 @@ public class AverageAnalysis implements Runnable{
 									if (sourceTypeRS.next()){ //change conversion factor
 										if (sourceTypeRS.getString("source_type").equals("Light") && sourceTypeRS.getString("measurement_type").equals("OnTime")){
 											//valueString = "@file_id:=file_id AS file_id,@source_id:=source_id AS source_id,@freq:=(SELECT frequency FROM files WHERE file_id = @file_id) AS freq,@wattage:=(SELECT wattage FROM lights WHERE source_id = @source_id) AS wattage,ROUND(AVG(value*(@wattage/@freq)),3) AS analysisValue";
-											valueString = "ROUND(AVG(data_sa.value*(lights.wattage/files.frequency)),3) AS analysisValue, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount, ROUND(STDDEV(data_sa.value*(lights.wattage/files.frequency)),3) AS standardDev";
+											valueString = "ROUND(AVG(data_sa.value*(lights.wattage/files.frequency)),6) AS analysisValue, ROUND(SUM(IF(data_sa.value IS NOT NULL,1,0)*(files.frequency/60)),1) AS pointCount, ROUND(STDDEV(data_sa.value*(lights.wattage/files.frequency)),6) AS standardDev";
 											joinString = "LEFT JOIN files ON files.file_id = data_sa.file_id LEFT JOIN lights ON lights.source_id = data_sa.source_id";
 										}
 									}
@@ -454,10 +454,10 @@ public class AverageAnalysis implements Runnable{
 									i++;
 								}
 								
-								csvWriter.append((legitCount==0 ? "null" : new DecimalFormat("#.###").format(weightedAverageSums/countSum) ));
+								csvWriter.append((legitCount==0 ? "null" : new DecimalFormat("#.######").format(weightedAverageSums/countSum) ));
 								if (includeCount){csvWriter.append(","+(legitCount==0 ? "null" : (samplePeriod.equals("Monthly")? new DecimalFormat("#.#").format(countSum/1440) : new DecimalFormat("#.#").format(countSum) )));}
-								if (doStdDev){csvWriter.append(","+(legitCount==0 ? "null" : new DecimalFormat("#.###").format(weightedStdDevs/countSum) ));}
-								if (doMinMax){csvWriter.append(","+(legitCount==0 ? "null,null" : new DecimalFormat("#.###").format(minVal) + "," + new DecimalFormat("#.###").format(maxVal) ));}
+								if (doStdDev){csvWriter.append(","+(legitCount==0 ? "null" : new DecimalFormat("#.######").format(weightedStdDevs/countSum) ));}
+								if (doMinMax){csvWriter.append(","+(legitCount==0 ? "null,null" : new DecimalFormat("#.######").format(minVal) + "," + new DecimalFormat("#.######").format(maxVal) ));}
 								
 								
 								//csvWriter.append((averagedData[j][i]==null ? "null" : Double.toString(averagedData[j][i])));
