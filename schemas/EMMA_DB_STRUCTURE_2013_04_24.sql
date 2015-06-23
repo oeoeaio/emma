@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS `gas` (
 
 -- Dumping structure for procedure enduse.getRefrigAnalysisData
 DELIMITER //
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getRefrigAnalysisData`(IN `siteID` INT, IN `sourceID` INT, IN `Param6` BIGINT, IN `tempSourceID` INT, IN `startDate` DATETIME, IN `fileID` DATETIME)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getRefrigAnalysisData`(IN `siteID` INT, IN `sourceID` INT, IN `fileID` BIGINT, IN `tempSourceID` INT, IN `startDate` DATETIME, IN `endDate` DATETIME)
 BEGIN
 
 DECLARE tempFreq INT DEFAULT (SELECT MAX(frequency) FROM files WHERE file_id IN (SELECT DISTINCT file_id FROM data_sa WHERE site_id = siteID AND source_id = tempSourceID AND data_sa.date_time BETWEEN startDate AND endDate));
@@ -284,20 +284,20 @@ CREATE EVENT `issue_aggregator` ON SCHEDULE EVERY 1 DAY STARTS '2012-07-24 15:27
   DECLARE issue_cursor CURSOR FOR SELECT site_id,source_id,issue_type FROM issue_points GROUP BY site_id,source_id,issue_type ORDER BY site_id,source_id,issue_type;
   DECLARE issue_groups CURSOR FOR SELECT start_dates.date_time AS start_date,end_dates.date_time AS end_date FROM (SELECT @start_row_num:=@start_row_num+1 AS row_num,date_time FROM issue_points WHERE date_time NOT IN (SELECT DATE_ADD(issue_points.date_time,INTERVAL files.frequency/60 MINUTE) FROM issue_points LEFT JOIN data_sa ON issue_points.site_id = data_sa.site_id AND issue_points.source_id = data_sa.source_id AND issue_points.date_time = data_sa.date_time LEFT JOIN files ON data_sa.file_id = files.file_id WHERE issue_points.site_id = curr_site_id AND issue_points.source_id = curr_source_id AND issue_points.issue_type = curr_issue_type) AND issue_points.site_id = curr_site_id AND issue_points.source_id = curr_source_id AND issue_points.issue_type = curr_issue_type) AS start_dates LEFT JOIN (SELECT @end_row_num:=@end_row_num+1 AS row_num,date_time FROM issue_points WHERE date_time NOT IN (SELECT DATE_SUB(issue_points.date_time,INTERVAL files.frequency/60 MINUTE) FROM issue_points LEFT JOIN data_sa ON issue_points.site_id = data_sa.site_id AND issue_points.source_id = data_sa.source_id AND issue_points.date_time = data_sa.date_time LEFT JOIN files ON data_sa.file_id = files.file_id WHERE issue_points.site_id = curr_site_id AND issue_points.source_id = curr_source_id AND issue_points.issue_type = curr_issue_type) AND issue_points.site_id = curr_site_id AND issue_points.source_id = curr_source_id AND issue_points.issue_type = curr_issue_type) AS end_dates USING(row_num);
   DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-  
-  
-  
-	
+
+
+
+
 	OPEN issue_cursor;
 	issue_loop: LOOP
 		FETCH issue_cursor INTO curr_site_id,curr_source_id,curr_issue_type;
 		IF done THEN
 			LEAVE issue_loop;
 		END IF;
-		SET last_mod_date = (SELECT IFNULL(MAX(mod_date),0) FROM issues WHERE site_id = curr_site_id AND source_id = curr_source_id AND issue_type = curr_issue_type);		
+		SET last_mod_date = (SELECT IFNULL(MAX(mod_date),0) FROM issues WHERE site_id = curr_site_id AND source_id = curr_source_id AND issue_type = curr_issue_type);
 		SET start_row_num = 0;
 		SET end_row_num = 0;
-		
+
 		OPEN issue_groups;
 		issue_group_loop: LOOP
 			FETCH issue_groups INTO curr_start_date,curr_end_date;
@@ -307,19 +307,19 @@ CREATE EVENT `issue_aggregator` ON SCHEDULE EVERY 1 DAY STARTS '2012-07-24 15:27
 				LEAVE issue_loop;
 			END IF;
 			REPLACE INTO issues (site_id,source_id,start_date,end_date,issue_type) VALUES(curr_site_id,curr_source_id,curr_start_date,curr_end_date,curr_issue_type);
-			
-			
+
+
 		END LOOP;
-		
+
 	END LOOP;
-	
+
 	CLOSE issue_cursor;
-	
+
 	SET done = FALSE; # reset for next cursor loop
-	
+
 		/*IF prev_end_date IS NOT NULL AND curr_site_id = prev_site_id AND curr_source_id = prev_source_id AND curr_start_date <> THEN
-			
-	    	
+
+
 	    	SET block_start = start_date;
 		ELSE
 		  	SET block_end = end_date;
@@ -328,13 +328,13 @@ CREATE EVENT `issue_aggregator` ON SCHEDULE EVERY 1 DAY STARTS '2012-07-24 15:27
 		SET prev_source_id = curr_source_id;
 		SET prev_start_date = curr_start_date;
 		SET prev_end_date = curr_end_date;*/
-		
-	#update missing data 	
-	
+
+	#update missing data
+
 	#always look through preious two days
 	#then update days covered by files added since issues were last updated
-	
-/*	
+
+/*
 	OPEN file_cursor;
 
 	file_loop: LOOP
@@ -342,8 +342,8 @@ CREATE EVENT `issue_aggregator` ON SCHEDULE EVERY 1 DAY STARTS '2012-07-24 15:27
 		IF done THEN
 			LEAVE file_loop;
 		END IF;
-		
-		
+
+
 	END LOOP;
 
 	CLOSE file_cursor;
@@ -542,7 +542,7 @@ DELIMITER //
 CREATE DEFINER=`root`@`localhost` PROCEDURE `test_issue_aggregator`()
 BEGIN
   DECLARE done INT DEFAULT FALSE;
- 
+
   DECLARE frequency INT DEFAULT 60;
   DECLARE curr_site_id,curr_source_id INT DEFAULT NULL;
   #DECLARE curr_start_date,curr_end_date DATETIME DEFAULT NULL;
@@ -555,28 +555,28 @@ BEGIN
   #DECLARE issue_group_cursor CURSOR FOR SELECT start_date,end_date FROM temp_issue_groups;
   DECLARE issue_point_cursor CURSOR FOR SELECT date_time FROM issue_points WHERE site_id = curr_site_id ANd source_id = curr_source_id AND issue_type = curr_issue_type ANd update_timestamp >= @last_mod_date ORDER BY site_id ASC,source_id ASC,issue_type ASC,date_time ASC;
   #DECLARE issue_point_cursor CURSOR FOR SELECT issue_points.date_time,files.frequency FROM issue_points LEFT JOIN files ON issue_points.site_id = files.site_id AND issue_points.source_id = files.source_id AND issue_points.date_time BETWEEN files.start_date AND files.end_date WHERE issue_points.site_id = curr_site_id  AND issue_points.source_id = curr_source_id AND issue_points.issue_type = curr_issue_type AND issue_points.update_timestamp >= @last_mod_date ORDER BY issue_points.site_id ASC,issue_points.source_id ASC,issue_points.issue_type ASC,issue_points.date_time ASC;
-  
+
   DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
 	#DELETE FROM temp;
-	
+
 	OPEN issue_type_cursor;
 	issue_loop: LOOP
 		FETCH issue_type_cursor INTO curr_site_id,curr_source_id,curr_issue_type;
 		IF done THEN
 			LEAVE issue_loop;
 		END IF;
-		SET @last_mod_date = (SELECT IFNULL(MAX(start_date),0) FROM issues WHERE site_id = curr_site_id AND source_id = curr_source_id AND issue_type = curr_issue_type);		
+		SET @last_mod_date = (SELECT IFNULL(MAX(start_date),0) FROM issues WHERE site_id = curr_site_id AND source_id = curr_source_id AND issue_type = curr_issue_type);
 		#SET @start_row_num = 0;
 		#SET @end_row_num = 0;
-		
+
 		/*DROP TEMPORARY TABLE IF EXISTS `temp_issue_groups`;
 		CREATE TEMPORARY TABLE `temp_issue_groups` (
 		`start_date` datetime NOT NULL,
 	 	`end_date` float,
 		PRIMARY KEY (`date_time`)
 		) ENGINE=InnoDB DEFAULT CHARSET=latin1;*/
-		
+
 		#SET @start_next_existing = NULL;
 		#SET @end_curr_existing = NULL;
 		SET prev_date_time = NULL;
@@ -598,12 +598,12 @@ BEGIN
 					#INSERT INTO temp (site_id,source_id,issue_type,prev_plus,prev,curr) VALUES(curr_site_id,curr_source_id,curr_issue_type,DATE_ADD(prev_date_time,INTERVAL frequency SECOND),prev_date_time,curr_date_time);
 					#INSERT INTO temp_issue_groups (start_date,end_date) VALUES(curr_block_start,prev_date_time);
 					SELECT MIN(start_date),MAX(end_date) FROM issues WHERE site_id = curr_site_id AND source_id = curr_source_id AND issue_type = curr_issue_type AND end_date >= DATE_SUB(curr_block_start,INTERVAL frequency SECOND) AND start_date <=  DATE_SUB(prev_date_time,INTERVAL frequency SECOND) INTO @start_existing,@end_existing;
-					
+
 					SET @block_start = LEAST(curr_block_start,IFNULL(@start_existing,curr_block_start));
 					SET @block_end = GREATEST(prev_date_time,IFNULL(@end_existing,prev_date_time));
-					
-					DELETE FROM issues WHERE site_id = curr_site_id AND source_id = curr_source_id AND issue_type = curr_issue_type AND end_date >= DATE_SUB(curr_block_start,INTERVAL frequency SECOND) AND start_date <=  DATE_SUB(prev_date_time,INTERVAL frequency SECOND); 
-					
+
+					DELETE FROM issues WHERE site_id = curr_site_id AND source_id = curr_source_id AND issue_type = curr_issue_type AND end_date >= DATE_SUB(curr_block_start,INTERVAL frequency SECOND) AND start_date <=  DATE_SUB(prev_date_time,INTERVAL frequency SECOND);
+
 					INSERT INTO issues (site_id,source_id,start_date,end_date,issue_type) VALUES(curr_site_id,curr_source_id,@block_start,@block_end,curr_issue_type) ON DUPLICATE KEY UPDATE end_date = @block_end;
 					SET curr_block_start = curr_date_time;
 					#SELECT IFNULL(start_date,curr_date_time),end_date FROM issues WHERE site_id = curr_site_id AND source_id = curr_source_id AND issue_type = curr_issue_type AND start_date < curr_date_time AND end_date >= DATE_SUB(curr_date_time,INTERVAL frequency SECOND) INTO curr_block_start,@end_curr_existing;
@@ -626,18 +626,18 @@ BEGIN
 			END IF;
 			INSERT INTO issues (site_id,source_id,start_date,end_date,issue_type) VALUES(curr_site_id,curr_source_id,curr_start_date,curr_end_date,curr_issue_type) ON DUPLICATE KEY UPDATE end_date=curr_end_date,issue_type=curr_issue_type;
 		END LOOP;
-		
+
 		DROP TEMPORARY TABLE IF EXISTS `temp_issue_groups`;*/
-		
+
 	END LOOP;
-	
+
 	CLOSE issue_type_cursor;
-	
+
 	SET done = FALSE; # reset for next cursor loop
-	
+
 		/*IF prev_end_date IS NOT NULL AND curr_site_id = prev_site_id AND curr_source_id = prev_source_id AND curr_start_date <> THEN
-			
-	    	
+
+
 	    	SET block_start = start_date;
 		ELSE
 		  	SET block_end = end_date;
@@ -646,13 +646,13 @@ BEGIN
 		SET prev_source_id = curr_source_id;
 		SET prev_start_date = curr_start_date;
 		SET prev_end_date = curr_end_date;*/
-		
-	#update missing data 	
-	
+
+	#update missing data
+
 	#always look through preious two days
 	#then update days covered by files added since issues were last updated
-	
-/*	
+
+/*
 	OPEN file_cursor;
 
 	file_loop: LOOP
@@ -660,8 +660,8 @@ BEGIN
 		IF done THEN
 			LEAVE file_loop;
 		END IF;
-		
-		
+
+
 	END LOOP;
 
 	CLOSE file_cursor;
