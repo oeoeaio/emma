@@ -23,6 +23,7 @@ import javax.swing.WindowConstants;
 
 import dataPlotter.DataPlotPanel;
 import fileManagement.BOMValidator;
+import fileManagement.FlexiValidator;
 import fileManagement.CTValidator;
 import fileManagement.PDCDecodeWindow;
 import fileManagement.PDCImportPanel;
@@ -56,6 +57,7 @@ public class EndUseWindow extends JFrame implements ActionListener{
 	JMenuItem pdcImport = new JMenuItem("PDC File(s) (.pdc)");
 	JMenuItem ctImport = new JMenuItem("CT File (.txt)");
 	JMenuItem bomImport = new JMenuItem("BOM File (.txt)");
+	JMenuItem flexiImport = new JMenuItem("Flexi File (.txt/.csv)");
 	
 	JMenu exportMenu = new JMenu("Export");
 	JMenuItem exportBatchFile = new JMenuItem("Batch File (.csv)");
@@ -159,11 +161,13 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			importMenu.add(pdcImport);
 			importMenu.add(ctImport);
 			importMenu.add(bomImport);
+			importMenu.add(flexiImport);
 			importBatchFile.addActionListener(this);
 			standAloneImport.addActionListener(this);
 			pdcImport.addActionListener(this);
 			ctImport.addActionListener(this);
 			bomImport.addActionListener(this);
+			flexiImport.addActionListener(this);
 			
 			fileMenu.add(exportMenu);
 			exportMenu.add(exportBatchFile);
@@ -265,6 +269,17 @@ public class EndUseWindow extends JFrame implements ActionListener{
 			if (fileChooser.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){
 				fileSettings.put("LastBOMOpen", fileChooser.getSelectedFile().getParent());
 				Thread processBatch = new Thread(new BOMValidator(mySQLConnection,new LogWindow("BOM Data Import Log"),fileChooser.getSelectedFiles()));
+				processBatch.start();
+			}
+		}
+		else if (aE.getSource().equals(flexiImport)){
+			JFileChooser fileChooser = new JFileChooser();
+			File lastDir = new File(fileSettings.get("LastFlexiOpen", fileChooser.getCurrentDirectory().getAbsolutePath()));
+			if (lastDir.isDirectory()){fileChooser.setCurrentDirectory(lastDir);}
+			fileChooser.setMultiSelectionEnabled(true);
+			if (fileChooser.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){
+				fileSettings.put("LastFlexiOpen", fileChooser.getSelectedFile().getParent());
+				Thread processBatch = new Thread(new FlexiValidator(mySQLConnection,new LogWindow("Flexi Data Import Log"),fileChooser.getSelectedFiles()));
 				processBatch.start();
 			}
 		}
