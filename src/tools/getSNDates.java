@@ -61,7 +61,7 @@ public class getSNDates extends Thread{
 							System.out.println("SDFGSGHSFGHSRTH");
 							break;
 						}
-						else if (splitline.length==3 
+						else if (splitline.length>=3 // we want at least one data column, but can be more than one
 						&& (Pattern.matches("^\\d{1,2}/\\d{1,2}/\\d\\d(\\d\\d){0,1}$",splitline[0])
 						|| Pattern.matches("^\\d\\d(\\d\\d){0,1}/\\d{1,2}/\\d{1,2}$",splitline[0])) 
 						&& Pattern.matches("^\\d{1,2}:\\d\\d:\\d\\d$",splitline[1])){
