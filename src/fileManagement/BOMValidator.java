@@ -257,7 +257,7 @@ public class BOMValidator implements Runnable{
 					for (int i=2;i<splitline.length;i++){
 						int fileIndex = (i>5?i-3:i-2);
 						if (i != 5){
-							if (Pattern.matches("^-?\\d{1,4}(.\\d{1,4})?$",splitline[i])){
+							if (Pattern.matches("^-?\\d{1,4}(.\\d{1,6})?$",splitline[i])){
 								//ONLY ADDS VALID DATA TO THE ARRAY
 								try {
 									fileList.get(fileIndex).addRow(new DataPoint(dateTranslator.parse(dateTime).getTime(),Double.parseDouble(splitline[i])));
