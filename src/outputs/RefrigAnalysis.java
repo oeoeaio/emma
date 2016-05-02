@@ -31,6 +31,7 @@ public class RefrigAnalysis implements Runnable{
 	private ArrayList<Double> tempsArray;
 	private final int basePowerOffset;
 	private final double pwrCorr;
+	private final double blackoutOffCount;
 	private final Connection dbConn;
 	private final LogWindow logWindow;
 	private final Source source;
@@ -43,7 +44,7 @@ public class RefrigAnalysis implements Runnable{
 	private final SimpleDateFormat csvDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 	
 	
-	RefrigAnalysis(Connection dbConn,LogWindow logWindow,Source source,Source tempSource,Long startDate,Long endDate,Double threshold1,Double threshold2,int basePowerOffset,Double pwrCorr){
+	RefrigAnalysis(Connection dbConn,LogWindow logWindow,Source source,Source tempSource,Long startDate,Long endDate,Double threshold1,Double threshold2,int basePowerOffset,Double pwrCorr, Double blackoutOffCount){
 		sqlDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		csvDateFormatter.setTimeZone(TimeZone.getTimeZone("GMT+10"));
 		this.dbConn = dbConn;
@@ -56,6 +57,7 @@ public class RefrigAnalysis implements Runnable{
 		this.threshold2 = threshold2;
 		this.basePowerOffset = basePowerOffset;
 		this.pwrCorr = pwrCorr;
+		this.blackoutOffCount = blackoutOffCount;
 	}
 	
 	public void run(){
@@ -629,6 +631,16 @@ public class RefrigAnalysis implements Runnable{
 				else if (i==crossoverArray.size()-1 || (i==crossoverArray.size()-2 && crossoverArray.get(i)[1] == 5)){
 					threshold = -1;
 				}
+				else if (i<crossoverArray.size()-1 && (offCount * (frequency/60)) > blackoutOffCount){
+					//if more than blackoutOffCount mins in off
+					threshold = 8;
+					if (i<crossoverArray.size()-2 && crossoverArray.get(i)[1] != 5){
+						crossoverArray.get(i)[1] = 9;
+					}
+					else if (i<crossoverArray.size()-3 && crossoverArray.get(i+1)[1] != 5){
+						crossoverArray.get(i+1)[1] = 9;
+					}
+				}
 				else if (crossoverArray.get(i)[1] == 3){
 					if (threshold == 1){threshold = 2;}
 				}
@@ -640,16 +652,6 @@ public class RefrigAnalysis implements Runnable{
 				}
 				else if (i>2 && crossoverArray.get(i-2)[1] == 5 && crossoverArray.get(i-3)[1] == 3){
 					if (threshold == 1){threshold = 4;}
-				}
-				else if (i<crossoverArray.size()-1 && (offCount/(onCount+offCount)) * ((onCount+offCount)*(frequency/60)) > 45){
-					//if more than 45 mins in off
-					threshold = 8;
-					if (i<crossoverArray.size()-2 && crossoverArray.get(i)[1] != 5){
-						crossoverArray.get(i)[1] = 9;
-					}
-					else if (i<crossoverArray.size()-3 && crossoverArray.get(i+1)[1] != 5){
-						crossoverArray.get(i+1)[1] = 9;
-					}
 				}
 				
 				if (tempSource!=null){avTemp = getAverage(tempsArray.subList(periodStartRow, nextPeriodStartRow-1));}

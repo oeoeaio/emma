@@ -79,11 +79,19 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 	JTextField threshInput2 = new JTextField(3);
 	JLabel basePowerL = new JLabel("Base Power Offset");
 	JComboBox<Integer> basePowerS = new JComboBox<Integer>(new Integer[] {1,2,3,4,5,6,7,8,9,10});
+
+	
 	//Power Correction
 	JPanel pwrCorrPanel = new JPanel();
 	JLabel pwrCorrL = new JLabel("Power Correction: ");
 	JTextField pwrCorrT = new JTextField(3);
 	JLabel pwrCorrL2 = new JLabel("(value to subtract)");
+	
+	//Blackout Panel
+	JPanel blackoutPanel = new JPanel();
+	JLabel blackoutOffCountLabel = new JLabel("Blackout (OFF mins/period): ");
+	JTextField blackoutOffCount = new JTextField(3);
+	
 	//Process Button
 	JPanel analysePanel = new JPanel();
 	JButton analyseButton = new JButton("Analyse...");
@@ -168,6 +176,11 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 		pwrCorrPanel.add(pwrCorrL2);
 		pwrCorrT.setText("0.0");
 		
+		blackoutPanel.add(blackoutOffCountLabel);
+		blackoutPanel.add(blackoutOffCount);
+		blackoutOffCount.setText("45");
+
+		
 		analysePanel.setLayout(new FlowLayout());
 		analysePanel.add(analyseButton);
 		analyseButton.addActionListener(this);
@@ -179,6 +192,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 		//mainPanel.add(outFilePanel);
 		mainPanel.add(thresholdPanel);
 		mainPanel.add(pwrCorrPanel);
+		mainPanel.add(blackoutPanel);
 		mainPanel.add(analysePanel);
 		mainPanel.setBorder(BorderFactory.createEmptyBorder(0,5,0,5));
 		
@@ -256,7 +270,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 								if (tempSourceTable.sourceListModel.isSelectionEmpty()==false){
 									tempSource = tempSourceTable.sourceList.get(tempSourceTable.getSelectedRow());
 								}
-								Thread analysisThread = new Thread(new RefrigAnalysis(dbConn,new LogWindow("Refrigerator Analysis Log"),refrigSourceTable.sourceList.get(refrigSourceTable.getSelectedRow()),tempSource,dateRange.get(startDateS.getSelectedIndex()),dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()),Double.parseDouble(threshInput1.getText()),Double.parseDouble(threshInput2.getText()),Integer.parseInt(basePowerS.getSelectedItem().toString()),Double.parseDouble(pwrCorrT.getText())));
+								Thread analysisThread = new Thread(new RefrigAnalysis(dbConn,new LogWindow("Refrigerator Analysis Log"),refrigSourceTable.sourceList.get(refrigSourceTable.getSelectedRow()),tempSource,dateRange.get(startDateS.getSelectedIndex()),dateRange.get(startDateS.getSelectedIndex()+endDateS.getSelectedIndex()),Double.parseDouble(threshInput1.getText()),Double.parseDouble(threshInput2.getText()),Integer.parseInt(basePowerS.getSelectedItem().toString()),Double.parseDouble(pwrCorrT.getText()),Double.parseDouble(blackoutOffCount.getText())));
 								analysisThread.start();
 							}
 
