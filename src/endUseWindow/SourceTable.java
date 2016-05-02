@@ -22,7 +22,7 @@ public class SourceTable extends JTable{
 	Connection dbConn;
 	Site site;
 	String sourceType;
-	String applianceType;
+	String[] applianceTypes;
 	//TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(this.getModel());
 	
 	public SourceTable(int selectionMode,String[] columnHeaders){
@@ -82,7 +82,17 @@ public class SourceTable extends JTable{
 		this.dbConn = dbConn;
 		this.site = site;
 		this.sourceType = sourceType;
-		this.applianceType = applianceType;
+		this.applianceTypes = new String[] { applianceType };
+		//greyTable();
+		Thread fetchSourceList = new Thread(new FetchSourceList());
+		fetchSourceList.start();
+	}
+	
+	public void update(Connection dbConn,Site site,String sourceType,String[] applianceTypes){
+		this.dbConn = dbConn;
+		this.site = site;
+		this.sourceType = sourceType;
+		this.applianceTypes = applianceTypes;
 		//greyTable();
 		Thread fetchSourceList = new Thread(new FetchSourceList());
 		fetchSourceList.start();
@@ -94,7 +104,7 @@ public class SourceTable extends JTable{
 				sourceList.clear();
 				String restrictString = "";
 				if (sourceType.equals("appliances")){
-					restrictString = "AND source_id IN (SELECT source_id FROM "+sourceType+" WHERE "+(site==null?"":"site_id = "+site.siteID)+" AND appliance_type = '"+applianceType+"')";
+					restrictString = "AND source_id IN (SELECT source_id FROM "+sourceType+" WHERE "+(site==null?"":"site_id = "+site.siteID)+" AND appliance_type IN ('"+String.join("','",applianceTypes)+"'))";
 				}else if (!sourceType.equals("")){
 					restrictString = "AND source_id IN (SELECT source_id FROM "+sourceType+" "+(site==null?"":"WHERE site_id = "+site.siteID)+")";
 				}

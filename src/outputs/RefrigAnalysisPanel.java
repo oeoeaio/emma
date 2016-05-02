@@ -401,7 +401,7 @@ public class RefrigAnalysisPanel extends JPanel implements ActionListener,ListSe
 	@Override
 	public void valueChanged(ListSelectionEvent lSE) {
 		if (lSE.getSource().equals(siteTable.siteListModel) && lSE.getValueIsAdjusting()==false){
-			refrigSourceTable.update(dbConn,siteTable.siteList.get(siteTable.getSelectedRow()),"appliances","Refrigerator");
+			refrigSourceTable.update(dbConn,siteTable.siteList.get(siteTable.getSelectedRow()),"appliances",new String[] {"Freezer","Refrigerator"});
 			tempSourceTable.update(dbConn,siteTable.siteList.get(siteTable.getSelectedRow()),"temperatures");
 			if (refrigSourceTable.sourceListModel.isSelectionEmpty()){
 				startDateS.removeAllItems();
