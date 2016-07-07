@@ -241,7 +241,7 @@ public class StandAloneValidator implements Runnable{
 					&& Pattern.matches("^\\d{1,2}/\\d{1,2}/\\d\\d(\\d\\d){0,1}$",splitline[0])
 					|| Pattern.matches("^\\d\\d(\\d\\d){0,1}/\\d{1,2}/\\d{1,2}$",splitline[0])){
 				if (Pattern.matches("^\\d{1,2}:\\d\\d(:00){0,1}$",splitline[1])
-						&& Pattern.matches("^-?\\d{1,4}(.\\d{1,2}){0,1}$",splitline[2])){
+						&& Pattern.matches("^-?\\d{1,4}(.\\d{1,6})?$",splitline[2])){
 					
 					splitline[1] += (Pattern.matches("^\\d{1,2}:\\d\\d$",splitline[1])?":00":""); //add seconds if absent
 					dateStrings.add(splitline[0]+" "+splitline[1]);
