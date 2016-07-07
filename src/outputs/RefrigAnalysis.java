@@ -11,6 +11,7 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -129,16 +130,16 @@ public class RefrigAnalysis implements Runnable{
 					try{
 						outputStream = new BufferedWriter(new FileWriter(outFile));
 						logWindow.println("Writing to file: "+outFile.getName());
-						outputStream.write("Project Name: "+"ADD PROJECT NAME"+"\r\n");
+						outputStream.write("Date Processed: "+sqlDateFormatter.format(GregorianCalendar.getInstance().getTime())+"\r\n");
 						outputStream.write("Site: "+source.getSite().getSiteName()+"(id:"+source.getSite().getSiteID()+")\r\n");
-						outputStream.write("Source: "+source.getSourceName()+"(id:"+source.getSourceID()+")\r\n");
+						outputStream.write("Source: "+source.getSourceName()+"(id:"+source.getSourceID()+"), "+tempSource.getSourceName()+"(id:"+tempSource.getSourceID()+")\r\n");
 						outputStream.write("Start Date: "+sqlDateFormatter.format(startDate)+"\r\n");
 						outputStream.write("End Date: "+sqlDateFormatter.format(endDate)+"\r\n");
 						outputStream.write((freqList.size()>1?"Frequencies: ":"Frequency: ")+freqString+" seconds\r\n");
 						outputStream.write("Threshold 1: "+threshold1+"\r\n");
 						outputStream.write("Threshold 2: "+threshold2+"\r\n");
 						outputStream.write("Base Power Offset: "+basePowerOffset+"\r\n");
-						outputStream.write("Power Correction: "+pwrCorr+"\r\n");
+						outputStream.write("Power Correction: "+pwrCorr+", Blackout Off: "+blackoutOffCount+"\r\n");
 						outputStream.write("Start Date,Start Time,Average Power (W),Av ON Power (W),Av OFF Power (W),Base Power,Trigger Threshold,Cycle Length (mins),% t ON,% t OFF,Energy,Frequency"+(tempSource==null?"":",Temperature")+"\r\n");
 	
 	
