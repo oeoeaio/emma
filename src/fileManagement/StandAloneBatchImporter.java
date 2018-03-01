@@ -178,7 +178,7 @@ public class StandAloneBatchImporter implements Runnable{
 									int selectedOption = sourceClashWindow.getSelectedOption(existingSourceID,existingSource,testSource);
 									if (selectedOption==1){
 										logWindow.println("RESOLVED: Existing information was correct.");
-										File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
+										File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf(File.separator))+File.separator+batchInfo.get(i).data[8]);
 										if (newFile.isFile() && newFile.canRead()){	
 											dataFile.fileName = newFile.getName();
 											dataFile.file = newFile;
@@ -191,7 +191,7 @@ public class StandAloneBatchImporter implements Runnable{
 										String changeExistingInfoSQL = "UPDATE sources SET source_type="+(testSource.getSourceType().equals("")?"NULL":"'"+testSource.getSourceType()+"'")+",measurement_type="+(testSource.getMeasurementType().equals("")?"NULL":"'"+testSource.getMeasurementType())+"' WHERE source_id = "+existingSourceID;
 										MySQL_Statement.executeUpdate(changeExistingInfoSQL);
 										existingSource = testSource;
-										File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
+										File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf(File.separator))+File.separator+batchInfo.get(i).data[8]);
 										if (newFile.isFile() && newFile.canRead()){	
 											dataFile.fileName = newFile.getName();
 											dataFile.file = newFile;
@@ -204,7 +204,7 @@ public class StandAloneBatchImporter implements Runnable{
 									}
 								}
 								else{ //sources are matching
-									File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
+									File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf(File.separator))+File.separator+batchInfo.get(i).data[8]);
 									if (newFile.isFile() && newFile.canRead()){	
 										dataFile.fileName = newFile.getName();
 										dataFile.file = newFile;
@@ -307,7 +307,7 @@ public class StandAloneBatchImporter implements Runnable{
 									}
 									
 									if (sourceAdded){
-										File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
+										File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf(File.separator))+File.separator+batchInfo.get(i).data[8]);
 										if (newFile.isFile() && newFile.canRead()){	
 											dataFile.fileName = newFile.getName();
 											dataFile.file = newFile;
@@ -336,7 +336,7 @@ public class StandAloneBatchImporter implements Runnable{
 								int selectedOption = sourceClashWindow.getSelectedOption(existingSourceID,existingSource,testSource);
 								if (selectedOption==1){ //keep source information
 									logWindow.println("RESOLVED: Existing information was correct.");
-									File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
+									File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf(File.separator))+File.separator+batchInfo.get(i).data[8]);
 									if (newFile.isFile() && newFile.canRead()){	
 										dataFile.fileName = newFile.getName();
 										dataFile.file = newFile;
@@ -349,7 +349,7 @@ public class StandAloneBatchImporter implements Runnable{
 									String changeExistingInfoSQL = "UPDATE sources SET source_type="+(testSource.getSourceType().equals("")?"NULL":"'"+testSource.getSourceType()+"'")+",measurement_type="+(testSource.getMeasurementType().equals("")?"NULL":"'"+testSource.getMeasurementType()+"'")+" WHERE source_id = "+existingSourceID;
 									MySQL_Statement.executeUpdate(changeExistingInfoSQL);
 									existingSource = testSource;
-									File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
+									File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf(File.separator))+File.separator+batchInfo.get(i).data[8]);
 									if (newFile.isFile() && newFile.canRead()){	
 										dataFile.fileName = newFile.getName();
 										dataFile.file = newFile;
@@ -362,7 +362,7 @@ public class StandAloneBatchImporter implements Runnable{
 								}
 							}
 							else{ //sources are matching
-								File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+batchInfo.get(i).data[8]);
+								File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf(File.separator))+File.separator+batchInfo.get(i).data[8]);
 								if (newFile.isFile() && newFile.canRead()){	
 									dataFile.fileName = newFile.getName();
 									dataFile.file = newFile;
@@ -417,7 +417,7 @@ public class StandAloneBatchImporter implements Runnable{
 					//TODO could make this test more strict
 					if (Arrays.asList(Source.getSourceTypeList()).contains(splitLine[6])){
 						if (Arrays.asList(Source.getMeasurementList()).contains(splitLine[7])){
-							File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf("\\"))+"\\"+splitLine[8]);
+							File newFile = new File(batchFile.getAbsolutePath().substring(0,batchFile.getAbsolutePath().lastIndexOf(File.separator))+File.separator+splitLine[8]);
 							if(newFile.isFile() && newFile.canRead()){
 								batchInfo.add(new DataLine(splitLine));
 							}
