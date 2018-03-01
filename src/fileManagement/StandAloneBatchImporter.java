@@ -413,7 +413,7 @@ public class StandAloneBatchImporter implements Runnable{
 				fileHeaders = Arrays.asList(splitLine);
 				while ((line = inputStream.readLine()) != null) {
 					splitLine = line.split(",");
-					if (!splitLine[8].endsWith(".txt")){splitLine[8] += ".txt";} //add extension to file name if absent
+					// if (!splitLine[8].endsWith(".txt")){splitLine[8] += ".txt";} //add extension to file name if absent
 					//TODO could make this test more strict
 					if (Arrays.asList(Source.getSourceTypeList()).contains(splitLine[6])){
 						if (Arrays.asList(Source.getMeasurementList()).contains(splitLine[7])){
